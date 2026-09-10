@@ -1,0 +1,1 @@
+// Type NoteLecture + schéma zod.
