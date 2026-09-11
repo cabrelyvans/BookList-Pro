@@ -1,21 +1,27 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { useLivres } from '@/hooks/useLivres';
+import { useLivresInfini } from '@/hooks/useLivres';
+import { useDebounce } from '@/hooks/useDebounce';
 import { EtatEcran } from '@/components/EtatEcran';
-import { Couverture } from '@/components/Couverture';
+import { CarteLivre } from '@/components/CarteLivre';
+import { FiltresLivres } from '@/features/books/FiltresLivres';
 import { theme } from '@/theme';
 import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
+import { CRITERES_PAR_DEFAUT, type CritereRecherche } from '@/domain/recherche';
 import type { Livre } from '@/domain/livre';
 
 /**
- * Écran d'accueil : liste paginée du fonds.
- * Aucun fetch ici — tout passe par le hook useLivres, qui passe lui-même
- * par services/api/. C'est la règle vérifiée en revue de code.
+ * Écran d'accueil : recherche/filtres/tri serveur (Lot 2) + défilement
+ * infini. Aucun filtrage local — chaque changement de critère déclenche une
+ * nouvelle page demandée au serveur, avec anti-rebond sur la recherche
+ * textuelle pour ne pas spammer l'API à chaque frappe.
  */
 export default function EcranAccueil() {
-  const [page] = useState(1);
-  const requete = useLivres({ page, limit: 20 });
+  const [criteres, setCriteres] = useState<CritereRecherche>(CRITERES_PAR_DEFAUT);
+  const critèresDifferes = useDebounce(criteres, 300);
+
+  const requete = useLivresInfini(critèresDifferes);
 
   if (requete.isLoading) {
     return <EtatEcran statut="chargement" />;
@@ -28,36 +34,31 @@ export default function EcranAccueil() {
     return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requete.refetch()} />;
   }
 
-  const livres = requete.data?.items ?? [];
+  const livres: Livre[] = requete.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <View style={styles.conteneur}>
+      <FiltresLivres criteres={criteres} onChange={setCriteres} />
+
       {livres.length === 0 ? (
-        <EtatEcran statut="vide" message="Aucun ouvrage dans le fonds pour l'instant." />
+        <EtatEcran statut="vide" message="Aucun ouvrage ne correspond à ces critères." />
       ) : (
         <FlatList
           data={livres}
-          keyExtractor={(item: Livre) => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.liste}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/livres/${item.id}`)}
-              style={({ pressed }) => [styles.carte, pressed && styles.cartePressee]}
-              accessibilityRole="button"
-              accessibilityLabel={`Ouvrir la fiche de ${item.titre}`}
-            >
-              <Couverture couverture={item.couverture} idLivre={item.id} titre={item.titre} largeur={48} />
-              <View style={styles.infos}>
-                <Text style={styles.titre} numberOfLines={1}>
-                  {item.titre}
-                </Text>
-                <Text style={styles.auteur}>
-                  {item.auteur} · {item.annee}
-                </Text>
-              </View>
-              {item.favori ? <Text style={styles.iconeFavori}>♥</Text> : null}
-            </Pressable>
-          )}
+          renderItem={({ item }) => <CarteLivre livre={item} onPress={(id) => router.push(`/livres/${id}`)} />}
+          onEndReachedThreshold={0.4}
+          onEndReached={() => {
+            if (requete.hasNextPage && !requete.isFetchingNextPage) {
+              void requete.fetchNextPage();
+            }
+          }}
+          ListFooterComponent={
+            requete.isFetchingNextPage ? (
+              <ActivityIndicator style={styles.chargementSuivant} color={theme.couleurs.primaire} accessibilityLabel="Chargement de la page suivante" />
+            ) : null
+          }
         />
       )}
 
@@ -76,22 +77,7 @@ export default function EcranAccueil() {
 const styles = StyleSheet.create({
   conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
   liste: { padding: theme.espacements.md, gap: theme.espacements.sm, paddingBottom: 88 },
-  carte: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.espacements.md,
-    backgroundColor: theme.couleurs.surface,
-    padding: theme.espacements.md,
-    borderRadius: theme.rayons.md,
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-    minHeight: 44,
-  },
-  cartePressee: { opacity: 0.7 },
-  infos: { flex: 1 },
-  titre: { fontSize: 16, fontWeight: '600', color: theme.couleurs.texte },
-  auteur: { color: theme.couleurs.texteAttenue, marginTop: 4 },
-  iconeFavori: { color: theme.couleurs.danger, fontSize: 18 },
+  chargementSuivant: { paddingVertical: theme.espacements.lg },
   boutonAjout: {
     position: 'absolute',
     right: theme.espacements.lg,
