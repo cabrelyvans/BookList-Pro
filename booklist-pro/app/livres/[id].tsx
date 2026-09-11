@@ -11,6 +11,7 @@ import { EtatEcran } from '@/components/EtatEcran';
 import { EtoilesNote } from '@/components/EtoilesNote';
 import { estErreurApplicative, messageUtilisateur, type ErreurApplicative } from '@/domain/erreurs';
 import type { Livre } from '@/domain/livre';
+import { EnrichissementOpenLibrary } from '@/features/books/EnrichissementOpenLibrary';
 import { FormulaireNote } from '@/features/notes/FormulaireNote';
 import { ListeNotes } from '@/features/notes/ListeNotes';
 import { useLivre } from '@/hooks/useLivres';
@@ -72,6 +73,7 @@ export default function EcranFicheLivre() {
             {livre.editeur ? `${livre.editeur} · ` : ''}
             {livre.annee}
           </Text>
+          <EnrichissementOpenLibrary titre={livre.titre} auteur={livre.auteur} />
         </View>
         <Pressable
           onPress={() => router.push({ pathname: '/livres/nouveau', params: { id: livre.id } })}

@@ -74,5 +74,11 @@
     "message": "“{{titre}}” deleted",
     "annuler": "Undo",
     "annulerAccessible": "Undo the deletion"
+  },
+  "openLibrary": {
+    "editions_one": "{{count}} edition on OpenLibrary",
+    "editions_other": "{{count}} editions on OpenLibrary",
+    "premierePublication": "First published: {{annee}}",
+    "aucuneEdition": "No edition found on OpenLibrary."
   }
 }

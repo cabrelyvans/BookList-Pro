@@ -74,5 +74,11 @@
     "message": "« {{titre}} » supprimé",
     "annuler": "Annuler",
     "annulerAccessible": "Annuler la suppression"
+  },
+  "openLibrary": {
+    "editions_one": "{{count}} édition recensée sur OpenLibrary",
+    "editions_other": "{{count}} éditions recensées sur OpenLibrary",
+    "premierePublication": "Première parution : {{annee}}",
+    "aucuneEdition": "Aucune édition recensée sur OpenLibrary."
   }
 }
