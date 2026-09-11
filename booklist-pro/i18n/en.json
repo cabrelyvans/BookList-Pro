@@ -1,15 +1,85 @@
 {
   "accueil": {
     "titre": "The collection",
-    "vide": "No books in the collection yet."
+    "vide": "No books in the collection yet.",
+    "videFiltre": "No book matches these criteria.",
+    "ajouter": "Add a book",
+    "ouvrirFiche": "Open the record for {{titre}}"
   },
   "commun": {
     "reessayer": "Retry",
-    "chargement": "Loading…"
+    "chargement": "Loading…",
+    "chargementAccessible": "Loading"
   },
   "livre": {
+    "titre": "Title",
     "auteur": "Author",
     "annee": "Year",
     "editeur": "Publisher"
+  },
+  "fiche": {
+    "modifier": "Edit",
+    "modifierAccessible": "Edit this book",
+    "lu": "Read",
+    "note": "Rating",
+    "notesLecture": "Reading notes",
+    "supprimer": "Delete this book",
+    "introuvable": "Book not found."
+  },
+  "confirmationSuppression": {
+    "titre": "Delete this book?",
+    "message": "“{{titre}}” will be removed from the collection. You can undo for a few seconds.",
+    "confirmer": "Delete",
+    "annuler": "Cancel"
+  },
+  "formulaire": {
+    "titreAjout": "Add a book",
+    "titreModification": "Edit the book",
+    "dejaLu": "Already read by the team",
+    "annuler": "Cancel",
+    "enregistrer": "Save"
+  },
+  "filtres": {
+    "rechercherPlaceholder": "Search by title or author…",
+    "statutTous": "All",
+    "statutLus": "Read",
+    "statutNonLus": "Unread",
+    "favoris": "♥ Favourites",
+    "favorisAccessible": "Filter: favourites only"
+  },
+  "notes": {
+    "placeholder": "Add a reading note…",
+    "ajouter": "Add",
+    "ajouterAccessible": "Add the note",
+    "supprimer": "Delete",
+    "supprimerAccessible": "Delete this note",
+    "vide": "No notes yet."
+  },
+  "favori": {
+    "ajouter": "Add to favourites",
+    "retirer": "Remove from favourites"
+  },
+  "etoiles": {
+    "label_one": "{{count}} star",
+    "label_other": "{{count}} stars"
+  },
+  "theme": {
+    "versClair": "Switch to light theme",
+    "versSombre": "Switch to dark theme"
+  },
+  "langue": {
+    "versAnglais": "Switch to English",
+    "versFrancais": "Passer en français"
+  },
+  "bandeauAnnulation": {
+    "message": "“{{titre}}” deleted",
+    "annuler": "Undo",
+    "annulerAccessible": "Undo the deletion"
+  },
+  "openLibrary": {
+    "editions_one": "{{count}} edition on OpenLibrary",
+    "editions_other": "{{count}} editions on OpenLibrary",
+    "premierePublication": "First published: {{annee}}",
+    "aucuneEdition": "No edition found on OpenLibrary."
   }
 }

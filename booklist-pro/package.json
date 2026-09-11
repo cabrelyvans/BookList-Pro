@@ -26,6 +26,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@react-native/jest-preset": "^0.86.3",
     "@testing-library/react-native": "^12.9.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.2.2",
@@ -46,12 +47,16 @@
     "web": "expo start --web",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
-    "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test": "jest --forceExit",
+    "test:coverage": "jest --coverage --forceExit"
   },
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/__tests__/aidesTest.tsx"
+    ],
     "collectCoverageFrom": [
       "domain/**/*.ts",
       "services/**/*.ts"

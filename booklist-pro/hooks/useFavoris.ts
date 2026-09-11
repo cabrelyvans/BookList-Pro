@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { modifierLivrePartiel } from '@/services/api/livres';
-import { clesLivres, transformerListesEnCache } from './useLivres';
-import type { Livre, PageLivres } from '@/domain/livre';
+import { clesLivres, transformerListesEnCache, type CacheListe } from './useLivres';
+import type { Livre } from '@/domain/livre';
 
-type ContextePrecedent = { precedent: [readonly unknown[], InfiniteData<PageLivres> | undefined][] };
+type ContextePrecedent = { precedent: [readonly unknown[], CacheListe | undefined][] };
 
 function creerBasculeOptimiste(champ: 'favori' | 'lu') {
   return () => {

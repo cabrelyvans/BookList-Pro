@@ -1,13 +1,16 @@
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useLivresInfini } from '@/hooks/useLivres';
+import { useTheme } from '@/hooks/useTheme';
 import { EtatEcran } from '@/components/EtatEcran';
 import { CarteLivre } from '@/components/CarteLivre';
 import { FiltresLivres } from '@/features/books/FiltresLivres';
-import { theme } from '@/theme';
+import type { Theme } from '@/theme';
+import { changerLangue } from '@/i18n';
 import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
-import { CRITERES_PAR_DEFAUT, type CritereRecherche } from '@/domain/recherche';
-import type { Livre } from '@/domain/livre';
+import { CRITERES_PAR_DEFAUT, criteresActifs, type CritereRecherche } from '@/domain/recherche';
 
 /**
  * Écran d'accueil : liste paginée du fonds, chargée par scroll infini.
@@ -15,27 +18,74 @@ import type { Livre } from '@/domain/livre';
  * par services/api/. C'est la règle vérifiée en revue de code.
  */
 export default function EcranAccueil() {
-  const requete = useLivresInfini({ limit: 20 });
+  const { t, i18n } = useTranslation();
+  const { themeActif, preference, basculerTheme } = useTheme();
+  const styles = creerStyles(themeActif);
+  const [criteres, setCriteres] = useState<CritereRecherche>(CRITERES_PAR_DEFAUT);
+  const requete = useLivresInfini(criteres);
+
+  // Référence stable : sans useCallback, renderItem recréait une nouvelle
+  // fonction à chaque rendu de l'écran (ex: frappe dans la recherche), ce
+  // qui invalidait le memo() de CarteLivre pour rien — la prop `onPress`
+  // seule suffisait à casser la comparaison superficielle de React.memo,
+  // même quand `livre` n'avait pas changé (voir docs/PERFORMANCE.md).
+  const ouvrirFiche = useCallback((id: string) => router.push(`/livres/${id}`), []);
+
+  const versAnglais = i18n.language !== 'en';
+
+  const enTete = (
+    <View style={styles.enTete}>
+      <Pressable
+        onPress={() => void changerLangue(versAnglais ? 'en' : 'fr')}
+        style={styles.boutonTheme}
+        accessibilityRole="button"
+        accessibilityLabel={t(versAnglais ? 'langue.versAnglais' : 'langue.versFrancais')}
+        hitSlop={8}
+      >
+        <Text style={styles.libelleBoutonLangue}>{versAnglais ? 'EN' : 'FR'}</Text>
+      </Pressable>
+      <Pressable
+        onPress={basculerTheme}
+        style={styles.boutonTheme}
+        accessibilityRole="button"
+        accessibilityLabel={t(preference === 'sombre' ? 'theme.versClair' : 'theme.versSombre')}
+        hitSlop={8}
+      >
+        <Text style={styles.libelleBoutonTheme}>{preference === 'sombre' ? '☀️' : '🌙'}</Text>
+      </Pressable>
+    </View>
+  );
 
   if (requete.isLoading) {
-    return <EtatEcran statut="chargement" />;
+    return (
+      <View style={styles.conteneur}>
+        {enTete}
+        <EtatEcran statut="chargement" />
+      </View>
+    );
   }
 
   if (requete.isError) {
     const erreur: ErreurApplicative = estErreurApplicative(requete.error)
       ? requete.error
       : { type: 'inconnue', message: 'Erreur inattendue.' };
-    return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requete.refetch()} />;
+    return (
+      <View style={styles.conteneur}>
+        {enTete}
+        <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requete.refetch()} />
+      </View>
+    );
   }
 
   const livres = requete.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <View style={styles.conteneur}>
+      {enTete}
       <FiltresLivres criteres={criteres} onChange={setCriteres} />
 
       {livres.length === 0 ? (
-        <EtatEcran statut="vide" message="Aucun ouvrage ne correspond à ces critères." />
+        <EtatEcran statut="vide" message={t(criteresActifs(criteres) ? 'accueil.videFiltre' : 'accueil.vide')} />
       ) : (
         <FlatList
           data={livres}
@@ -49,28 +99,10 @@ export default function EcranAccueil() {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             requete.isFetchingNextPage ? (
-              <ActivityIndicator style={styles.chargementSuite} color={theme.couleurs.primaire} />
+              <ActivityIndicator style={styles.chargementSuite} color={themeActif.couleurs.primaire} />
             ) : null
           }
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/livres/${item.id}`)}
-              style={({ pressed }) => [styles.carte, pressed && styles.cartePressee]}
-              accessibilityRole="button"
-              accessibilityLabel={`Ouvrir la fiche de ${item.titre}`}
-            >
-              <Couverture couverture={item.couverture} idLivre={item.id} titre={item.titre} largeur={48} />
-              <View style={styles.infos}>
-                <Text style={styles.titre} numberOfLines={1}>
-                  {item.titre}
-                </Text>
-                <Text style={styles.auteur}>
-                  {item.auteur} · {item.annee}
-                </Text>
-              </View>
-              {item.favori ? <Text style={styles.iconeFavori}>♥</Text> : null}
-            </Pressable>
-          )}
+          renderItem={({ item }) => <CarteLivre livre={item} onPress={ouvrirFiche} />}
         />
       )}
 
@@ -78,7 +110,7 @@ export default function EcranAccueil() {
         onPress={() => router.push('/livres/nouveau')}
         style={styles.boutonAjout}
         accessibilityRole="button"
-        accessibilityLabel="Ajouter un ouvrage"
+        accessibilityLabel={t('accueil.ajouter')}
       >
         <Text style={styles.libelleAjout}>+</Text>
       </Pressable>
@@ -86,37 +118,34 @@ export default function EcranAccueil() {
   );
 }
 
-const styles = StyleSheet.create({
-  conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
-  liste: { padding: theme.espacements.md, gap: theme.espacements.sm, paddingBottom: 88 },
-  chargementSuite: { marginVertical: theme.espacements.md },
-  carte: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.espacements.md,
-    backgroundColor: theme.couleurs.surface,
-    padding: theme.espacements.md,
-    borderRadius: theme.rayons.md,
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-    minHeight: 44,
-  },
-  cartePressee: { opacity: 0.7 },
-  infos: { flex: 1 },
-  titre: { fontSize: 16, fontWeight: '600', color: theme.couleurs.texte },
-  auteur: { color: theme.couleurs.texteAttenue, marginTop: 4 },
-  iconeFavori: { color: theme.couleurs.danger, fontSize: 18 },
-  boutonAjout: {
-    position: 'absolute',
-    right: theme.espacements.lg,
-    bottom: theme.espacements.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.couleurs.primaire,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-  },
-  libelleAjout: { color: '#fff', fontSize: 28, lineHeight: 30 },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
+    enTete: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      gap: theme.espacements.xs,
+      paddingHorizontal: theme.espacements.md,
+      paddingTop: theme.espacements.sm,
+    },
+    boutonTheme: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    libelleBoutonTheme: { fontSize: 20 },
+    libelleBoutonLangue: { fontSize: 14, fontWeight: '700', color: theme.couleurs.texteAttenue },
+    liste: { padding: theme.espacements.md, gap: theme.espacements.sm, paddingBottom: 88 },
+    chargementSuite: { marginVertical: theme.espacements.md },
+    boutonAjout: {
+      position: 'absolute',
+      right: theme.espacements.lg,
+      bottom: theme.espacements.lg,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: theme.couleurs.primaire,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 4,
+    },
+    libelleAjout: { color: theme.couleurs.surAccent, fontSize: 28, lineHeight: 30 },
+  });
+}

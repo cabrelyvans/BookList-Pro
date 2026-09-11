@@ -18,9 +18,14 @@ void i18next.use(initReactI18next).init({
 });
 
 // Une fois la préférence persistée relue, on l'applique par-dessus le choix système.
-void lireLanguePersistee().then((langue) => {
-  if (langue) void i18next.changeLanguage(langue);
-});
+// .catch() : même filet de sécurité que ThemeProvider — une lecture AsyncStorage
+// en échec (stockage natif indisponible, ex. environnement de test) ne doit pas
+// empêcher i18next de fonctionner avec sa langue par défaut.
+void lireLanguePersistee()
+  .then((langue) => {
+    if (langue) void i18next.changeLanguage(langue);
+  })
+  .catch(() => {});
 
 export async function changerLangue(langue: PreferenceLangue): Promise<void> {
   await i18next.changeLanguage(langue);

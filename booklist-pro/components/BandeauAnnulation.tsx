@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSuppressionEnAttente } from '@/features/books/suppressionEnAttente';
 import { useSupprimerLivreDifféré, DELAI_ANNULATION_MS } from '@/hooks/useModifierLivre';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme';
 
 /**
  * Bandeau global de rattrapage après suppression (Lot 1) : affiché au niveau
@@ -11,6 +13,9 @@ import { theme } from '@/theme';
  * réelle (5s) — les deux minuteurs démarrent au même instant.
  */
 export function BandeauAnnulation() {
+  const { t } = useTranslation();
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   const livre = useSuppressionEnAttente((etat) => etat.livre);
   const effacer = useSuppressionEnAttente((etat) => etat.effacer);
   const { annuler } = useSupprimerLivreDifféré();
@@ -26,7 +31,7 @@ export function BandeauAnnulation() {
   return (
     <View style={styles.bandeau} accessibilityRole="alert">
       <Text style={styles.texte} numberOfLines={1}>
-        « {livre.titre} » supprimé
+        {t('bandeauAnnulation.message', { titre: livre.titre })}
       </Text>
       <Pressable
         onPress={() => {
@@ -34,32 +39,34 @@ export function BandeauAnnulation() {
           effacer();
         }}
         accessibilityRole="button"
-        accessibilityLabel="Annuler la suppression"
+        accessibilityLabel={t('bandeauAnnulation.annulerAccessible')}
         style={styles.bouton}
         hitSlop={8}
       >
-        <Text style={styles.libelleBouton}>Annuler</Text>
+        <Text style={styles.libelleBouton}>{t('bandeauAnnulation.annuler')}</Text>
       </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  bandeau: {
-    position: 'absolute',
-    left: theme.espacements.md,
-    right: theme.espacements.md,
-    bottom: theme.espacements.lg,
-    backgroundColor: theme.couleurs.texte,
-    borderRadius: theme.rayons.md,
-    paddingVertical: theme.espacements.sm,
-    paddingHorizontal: theme.espacements.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: theme.espacements.md,
-  },
-  texte: { color: theme.couleurs.fond, flex: 1 },
-  bouton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: theme.espacements.sm },
-  libelleBouton: { color: theme.couleurs.primaire, fontWeight: '700' },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    bandeau: {
+      position: 'absolute',
+      left: theme.espacements.md,
+      right: theme.espacements.md,
+      bottom: theme.espacements.lg,
+      backgroundColor: theme.couleurs.texte,
+      borderRadius: theme.rayons.md,
+      paddingVertical: theme.espacements.sm,
+      paddingHorizontal: theme.espacements.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: theme.espacements.md,
+    },
+    texte: { color: theme.couleurs.fond, flex: 1 },
+    bouton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: theme.espacements.sm },
+    libelleBouton: { color: theme.couleurs.primaire, fontWeight: '700' },
+  });
+}

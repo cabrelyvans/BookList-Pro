@@ -8,6 +8,13 @@ type State = { erreur: Error | null };
 /**
  * ErrorBoundary global — chapitre 3.3 : un écran exploitable plutôt
  * qu'un écran blanc en cas d'exception non gérée dans le rendu.
+ *
+ * Reste volontairement sur l'import statique `theme` (thème clair fixe),
+ * pas useTheme() : dans app/_layout.tsx, ErrorBoundary enveloppe
+ * <ThemeProvider> lui-même (pour aussi rattraper un crash à l'intérieur
+ * de ThemeProvider) — useTheme() y lèverait toujours "doit être utilisé
+ * à l'intérieur de <ThemeProvider>", exactement l'inverse du filet de
+ * sécurité recherché ici.
  */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { erreur: null };

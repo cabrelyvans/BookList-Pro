@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { schemaSaisieLivre, type Livre, type SaisieLivre } from '@/domain/livre';
 import { useCreerLivre, useMettreAJourLivre, estErreur422 } from '@/hooks/useModifierLivre';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme';
 
 type Props = {
   /** Absent = création. Présent = édition de ce livre précis. */
@@ -21,6 +23,9 @@ const VALEURS_PAR_DEFAUT: SaisieLivre = { titre: '', auteur: '', editeur: '', an
  * vers le bon champ plutôt qu'affichées en bloc.
  */
 export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props) {
+  const { t } = useTranslation();
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   const creer = useCreerLivre();
   const mettreAJour = useMettreAJourLivre();
   const enCours = creer.isPending || mettreAJour.isPending;
@@ -61,7 +66,7 @@ export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props)
 
   return (
     <View style={styles.conteneur}>
-      <Champ label="Titre" erreur={errors.titre?.message}>
+      <Champ label={t('livre.titre')} erreur={errors.titre?.message}>
         <Controller
           control={control}
           name="titre"
@@ -70,34 +75,34 @@ export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props)
               value={field.value}
               onChangeText={field.onChange}
               style={styles.saisie}
-              accessibilityLabel="Titre"
+              accessibilityLabel={t('livre.titre')}
               editable={!enCours}
             />
           )}
         />
       </Champ>
 
-      <Champ label="Auteur" erreur={errors.auteur?.message}>
+      <Champ label={t('livre.auteur')} erreur={errors.auteur?.message}>
         <Controller
           control={control}
           name="auteur"
           render={({ field }) => (
-            <TextInput value={field.value} onChangeText={field.onChange} style={styles.saisie} accessibilityLabel="Auteur" editable={!enCours} />
+            <TextInput value={field.value} onChangeText={field.onChange} style={styles.saisie} accessibilityLabel={t('livre.auteur')} editable={!enCours} />
           )}
         />
       </Champ>
 
-      <Champ label="Éditeur" erreur={errors.editeur?.message}>
+      <Champ label={t('livre.editeur')} erreur={errors.editeur?.message}>
         <Controller
           control={control}
           name="editeur"
           render={({ field }) => (
-            <TextInput value={field.value} onChangeText={field.onChange} style={styles.saisie} accessibilityLabel="Éditeur" editable={!enCours} />
+            <TextInput value={field.value} onChangeText={field.onChange} style={styles.saisie} accessibilityLabel={t('livre.editeur')} editable={!enCours} />
           )}
         />
       </Champ>
 
-      <Champ label="Année" erreur={errors.annee?.message}>
+      <Champ label={t('livre.annee')} erreur={errors.annee?.message}>
         <Controller
           control={control}
           name="annee"
@@ -107,7 +112,7 @@ export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props)
               onChangeText={(texte) => field.onChange(Number.parseInt(texte, 10) || 0)}
               keyboardType="numeric"
               style={styles.saisie}
-              accessibilityLabel="Année"
+              accessibilityLabel={t('livre.annee')}
               editable={!enCours}
             />
           )}
@@ -119,8 +124,8 @@ export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props)
         name="lu"
         render={({ field }) => (
           <View style={styles.ligneInterrupteur}>
-            <Text style={styles.libelleInterrupteur}>Déjà lu par l&apos;équipe</Text>
-            <Switch value={field.value} onValueChange={field.onChange} disabled={enCours} accessibilityLabel="Déjà lu par l'équipe" />
+            <Text style={styles.libelleInterrupteur}>{t('formulaire.dejaLu')}</Text>
+            <Switch value={field.value} onValueChange={field.onChange} disabled={enCours} accessibilityLabel={t('formulaire.dejaLu')} />
           </View>
         )}
       />
@@ -129,17 +134,24 @@ export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props)
 
       <View style={styles.actions}>
         <Pressable onPress={onAnnuler} disabled={enCours} style={[styles.bouton, styles.boutonSecondaire]} accessibilityRole="button">
-          <Text style={styles.libelleSecondaire}>Annuler</Text>
+          <Text style={styles.libelleSecondaire}>{t('formulaire.annuler')}</Text>
         </Pressable>
         <Pressable onPress={soumettre} disabled={enCours} style={[styles.bouton, styles.boutonPrimaire]} accessibilityRole="button">
-          {enCours ? <ActivityIndicator color="#fff" /> : <Text style={styles.libellePrimaire}>Enregistrer</Text>}
+          {enCours ? <ActivityIndicator color={themeActif.couleurs.surAccent} /> : <Text style={styles.libellePrimaire}>{t('formulaire.enregistrer')}</Text>}
         </Pressable>
       </View>
     </View>
   );
 }
 
+// Sous-composant de présentation pure, propre à ce formulaire — son propre
+// useTheme() plutôt qu'un `styles` reçu en prop depuis FormulaireLivre :
+// StyleSheet.create ne peut pas être dynamique, donc chaque composant qui
+// a besoin du thème le relit lui-même (lecture de contexte, pas de calcul
+// coûteux).
 function Champ({ label, erreur, children }: { label: string; erreur?: string; children: React.ReactNode }) {
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   return (
     <View style={styles.champ}>
       <Text style={styles.label}>{label}</Text>
@@ -149,27 +161,29 @@ function Champ({ label, erreur, children }: { label: string; erreur?: string; ch
   );
 }
 
-const styles = StyleSheet.create({
-  conteneur: { gap: theme.espacements.md, padding: theme.espacements.lg },
-  champ: { gap: theme.espacements.xs },
-  label: { fontWeight: '600', color: theme.couleurs.texte },
-  saisie: {
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-    borderRadius: theme.rayons.sm,
-    paddingHorizontal: theme.espacements.sm,
-    minHeight: 44,
-    color: theme.couleurs.texte,
-    backgroundColor: theme.couleurs.surface,
-  },
-  erreurChamp: { color: theme.couleurs.danger, fontSize: 13 },
-  erreurGlobale: { color: theme.couleurs.danger, textAlign: 'center' },
-  ligneInterrupteur: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
-  libelleInterrupteur: { color: theme.couleurs.texte, fontWeight: '600' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: theme.espacements.md, marginTop: theme.espacements.sm },
-  bouton: { paddingHorizontal: theme.espacements.lg, paddingVertical: theme.espacements.sm, borderRadius: theme.rayons.md, minHeight: 44, justifyContent: 'center', minWidth: 100, alignItems: 'center' },
-  boutonSecondaire: { backgroundColor: theme.couleurs.fond },
-  boutonPrimaire: { backgroundColor: theme.couleurs.primaire },
-  libelleSecondaire: { color: theme.couleurs.texte, fontWeight: '600' },
-  libellePrimaire: { color: '#fff', fontWeight: '600' },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    conteneur: { gap: theme.espacements.md, padding: theme.espacements.lg },
+    champ: { gap: theme.espacements.xs },
+    label: { fontWeight: '600', color: theme.couleurs.texte },
+    saisie: {
+      borderWidth: 1,
+      borderColor: theme.couleurs.bordure,
+      borderRadius: theme.rayons.sm,
+      paddingHorizontal: theme.espacements.sm,
+      minHeight: 44,
+      color: theme.couleurs.texte,
+      backgroundColor: theme.couleurs.surface,
+    },
+    erreurChamp: { color: theme.couleurs.danger, fontSize: 13 },
+    erreurGlobale: { color: theme.couleurs.danger, textAlign: 'center' },
+    ligneInterrupteur: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
+    libelleInterrupteur: { color: theme.couleurs.texte, fontWeight: '600' },
+    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: theme.espacements.md, marginTop: theme.espacements.sm },
+    bouton: { paddingHorizontal: theme.espacements.lg, paddingVertical: theme.espacements.sm, borderRadius: theme.rayons.md, minHeight: 44, justifyContent: 'center', minWidth: 100, alignItems: 'center' },
+    boutonSecondaire: { backgroundColor: theme.couleurs.fond },
+    boutonPrimaire: { backgroundColor: theme.couleurs.primaire },
+    libelleSecondaire: { color: theme.couleurs.texte, fontWeight: '600' },
+    libellePrimaire: { color: theme.couleurs.surAccent, fontWeight: '600' },
+  });
+}
