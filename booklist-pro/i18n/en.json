@@ -3,7 +3,8 @@
     "titre": "The collection",
     "vide": "No books in the collection yet.",
     "videFiltre": "No book matches these criteria.",
-    "ajouter": "Add a book"
+    "ajouter": "Add a book",
+    "ouvrirFiche": "Open the record for {{titre}}"
   },
   "commun": {
     "reessayer": "Retry",

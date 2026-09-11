@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Couverture } from './Couverture';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme';
@@ -13,6 +14,7 @@ type Props = { livre: Livre; onPress: (id: string) => void };
  * nouvelle page) ne re-rende pas chaque ligne de la liste.
  */
 function CarteLivreBrute({ livre, onPress }: Props) {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
   return (
@@ -20,7 +22,7 @@ function CarteLivreBrute({ livre, onPress }: Props) {
       onPress={() => onPress(livre.id)}
       style={({ pressed }) => [styles.carte, pressed && styles.pressee]}
       accessibilityRole="button"
-      accessibilityLabel={`Ouvrir la fiche de ${livre.titre}`}
+      accessibilityLabel={t('accueil.ouvrirFiche', { titre: livre.titre })}
     >
       <Couverture couverture={livre.couverture} idLivre={livre.id} titre={livre.titre} largeur={48} />
       <View style={styles.infos}>

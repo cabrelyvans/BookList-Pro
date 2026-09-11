@@ -3,7 +3,8 @@
     "titre": "Le fonds",
     "vide": "Aucun ouvrage dans le fonds pour l'instant.",
     "videFiltre": "Aucun ouvrage ne correspond à ces critères.",
-    "ajouter": "Ajouter un ouvrage"
+    "ajouter": "Ajouter un ouvrage",
+    "ouvrirFiche": "Ouvrir la fiche de {{titre}}"
   },
   "commun": {
     "reessayer": "Réessayer",
