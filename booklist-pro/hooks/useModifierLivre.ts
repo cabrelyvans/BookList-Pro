@@ -1,6 +1,6 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { creerLivre, remplacerLivre, supprimerLivre } from '@/services/api/livres';
-import { clesLivres } from './useLivres';
+import { clesLivres, transformerListesEnCache } from './useLivres';
 import { useSuppressionEnAttente } from '@/features/books/suppressionEnAttente';
 import type { Livre, SaisieLivre } from '@/domain/livre';
 import type { ErreurApplicative } from '@/domain/erreurs';
@@ -49,10 +49,7 @@ export function useSupprimerLivreDifféré() {
   const queryClient = useQueryClient();
 
   const planifier = (livre: Livre): void => {
-    queryClient.setQueriesData<{ items: Livre[]; total: number } | undefined>(
-      { queryKey: clesLivres.tous },
-      (page) => (page ? { ...page, items: page.items.filter((item) => item.id !== livre.id) } : page),
-    );
+    transformerListesEnCache(queryClient, (items) => items.filter((item) => item.id !== livre.id));
     useSuppressionEnAttente.getState().annoncer(livre);
 
     const minuteur = setTimeout(() => {
