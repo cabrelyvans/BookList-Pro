@@ -1,7 +1,6 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { useLivres } from '@/hooks/useLivres';
+import { useLivresInfini } from '@/hooks/useLivres';
 import { EtatEcran } from '@/components/EtatEcran';
 import { Couverture } from '@/components/Couverture';
 import { theme } from '@/theme';
@@ -9,13 +8,12 @@ import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
 import type { Livre } from '@/domain/livre';
 
 /**
- * Écran d'accueil : liste paginée du fonds.
+ * Écran d'accueil : liste paginée du fonds, chargée par scroll infini.
  * Aucun fetch ici — tout passe par le hook useLivres, qui passe lui-même
  * par services/api/. C'est la règle vérifiée en revue de code.
  */
 export default function EcranAccueil() {
-  const [page] = useState(1);
-  const requete = useLivres({ page, limit: 20 });
+  const requete = useLivresInfini({ limit: 20 });
 
   if (requete.isLoading) {
     return <EtatEcran statut="chargement" />;
@@ -28,7 +26,7 @@ export default function EcranAccueil() {
     return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requete.refetch()} />;
   }
 
-  const livres = requete.data?.items ?? [];
+  const livres = requete.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <View style={styles.conteneur}>
@@ -39,6 +37,17 @@ export default function EcranAccueil() {
           data={livres}
           keyExtractor={(item: Livre) => item.id}
           contentContainerStyle={styles.liste}
+          onEndReached={() => {
+            if (requete.hasNextPage && !requete.isFetchingNextPage) {
+              void requete.fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            requete.isFetchingNextPage ? (
+              <ActivityIndicator style={styles.chargementSuite} color={theme.couleurs.primaire} />
+            ) : null
+          }
           renderItem={({ item }) => (
             <Pressable
               onPress={() => router.push(`/livres/${item.id}`)}
@@ -76,6 +85,7 @@ export default function EcranAccueil() {
 const styles = StyleSheet.create({
   conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
   liste: { padding: theme.espacements.md, gap: theme.espacements.sm, paddingBottom: 88 },
+  chargementSuite: { marginVertical: theme.espacements.md },
   carte: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,13 +1,49 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
+import { EtatEcran } from '@/components/EtatEcran';
+import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
 import { FormulaireLivre } from '@/features/books/FormulaireLivre';
+import { useLivre } from '@/hooks/useLivres';
 import { theme } from '@/theme';
 
-export default function EcranNouveauLivre() {
+// Si l'écran a été ouvert directement (rechargement de page sur le web,
+// lien partagé) il n'y a pas d'historique de navigation : router.back()
+// lève alors "GO_BACK was not handled". On retombe sur la liste dans ce cas.
+function retour() {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/');
+  }
+}
+
+/**
+ * Écran unique pour créer ET modifier un livre (CRUD complet, partie U) :
+ * `?id=` présent → édition (le formulaire est pré-rempli avec le livre
+ * existant) ; absent → création. Évite de dupliquer FormulaireLivre.
+ */
+export default function EcranFormulaireLivre() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const requeteLivre = useLivre(id);
+
+  if (id) {
+    if (requeteLivre.isLoading) {
+      return <EtatEcran statut="chargement" />;
+    }
+    if (requeteLivre.isError || !requeteLivre.data) {
+      const erreur: ErreurApplicative = estErreurApplicative(requeteLivre.error)
+        ? requeteLivre.error
+        : { type: 'inconnue', message: 'Livre introuvable.' };
+      return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requeteLivre.refetch()} />;
+    }
+  }
+
+  const livreExistant = id ? requeteLivre.data : undefined;
+
   return (
     <View style={styles.conteneur}>
-      <Text style={styles.titre}>Ajouter un ouvrage</Text>
-      <FormulaireLivre onReussite={() => router.back()} onAnnuler={() => router.back()} />
+      <Text style={styles.titre}>{livreExistant ? 'Modifier l’ouvrage' : 'Ajouter un ouvrage'}</Text>
+      <FormulaireLivre livreExistant={livreExistant} onReussite={retour} onAnnuler={retour} />
     </View>
   );
 }

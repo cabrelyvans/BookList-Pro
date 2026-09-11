@@ -1,5 +1,5 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { creerLivre, remplacerLivre, supprimerLivre } from '@/services/api/livres';
+import { creerLivre, modifierLivrePartiel, remplacerLivre, supprimerLivre } from '@/services/api/livres';
 import { clesLivres } from './useLivres';
 import { useSuppressionEnAttente } from '@/features/books/suppressionEnAttente';
 import type { Livre, SaisieLivre } from '@/domain/livre';
@@ -10,7 +10,7 @@ export function useCreerLivre() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (saisie: SaisieLivre) => {
-      const resultat = await creerLivre({ ...saisie, favori: false, note: null });
+      const resultat = await creerLivre({ ...saisie, favori: false, note: null, couverture: null });
       if (!resultat.succes) throw resultat.erreur;
       return resultat.donnees;
     },
@@ -26,6 +26,32 @@ export function useMettreAJourLivre() {
   return useMutation({
     mutationFn: async ({ livre, saisie }: { livre: Livre; saisie: SaisieLivre }) => {
       const resultat = await remplacerLivre({ ...livre, ...saisie });
+      if (!resultat.succes) throw resultat.erreur;
+      return resultat.donnees;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: clesLivres.tous });
+    },
+  });
+}
+
+/**
+ * Bascule ciblée (favori, lu, note) depuis la fiche détail — PATCH + If-Match,
+ * pas besoin de renvoyer le livre entier comme pour useMettreAJourLivre.
+ */
+export function useModifierLivrePartiel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      version,
+      modifications,
+    }: {
+      id: string;
+      version: number;
+      modifications: Partial<Pick<Livre, 'lu' | 'favori' | 'note' | 'titre' | 'auteur' | 'editeur' | 'annee'>>;
+    }) => {
+      const resultat = await modifierLivrePartiel(id, version, modifications);
       if (!resultat.succes) throw resultat.erreur;
       return resultat.donnees;
     },

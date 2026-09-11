@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { listerLivres } from '@/services/api/livres';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { listerLivres, obtenirLivre } from '@/services/api/livres';
 import type { FiltresLivres } from '@/domain/livre';
 
 /** Clé de cache structurée — chapitre §Lot 1 : clés de cache + invalidation après mutation. */
@@ -17,5 +17,41 @@ export function useLivres(filtres: FiltresLivres) {
       if (!resultat.succes) throw resultat.erreur;
       return resultat.donnees;
     },
+  });
+}
+
+/**
+ * Fiche détail d'un livre. `id` optionnel pour les écrans qui servent aussi
+ * en mode création (ex: le formulaire réutilisé création/édition) : la
+ * requête reste simplement désactivée tant qu'il n'y a pas d'id.
+ */
+export function useLivre(id: string | undefined) {
+  return useQuery({
+    queryKey: clesLivres.detail(id ?? ''),
+    queryFn: async ({ signal }) => {
+      const resultat = await obtenirLivre(id as string, signal);
+      if (!resultat.succes) throw resultat.erreur;
+      return resultat.donnees;
+    },
+    enabled: Boolean(id),
+  });
+}
+
+/**
+ * Scroll infini : le backend pagine déjà (page/limit/totalPages dans
+ * schemaPageLivres) — ce hook accumule les pages successives au fur et à
+ * mesure que l'écran demande la suivante, sans rien changer côté API.
+ */
+export function useLivresInfini(filtres: Omit<FiltresLivres, 'page'>) {
+  return useInfiniteQuery({
+    queryKey: clesLivres.liste(filtres),
+    queryFn: async ({ pageParam, signal }) => {
+      const resultat = await listerLivres({ ...filtres, page: pageParam }, signal);
+      if (!resultat.succes) throw resultat.erreur;
+      return resultat.donnees;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (dernierePage) =>
+      dernierePage.page < dernierePage.totalPages ? dernierePage.page + 1 : undefined,
   });
 }
