@@ -1,1 +1,15 @@
-{}
+{
+  "accueil": {
+    "titre": "The collection",
+    "vide": "No books in the collection yet."
+  },
+  "commun": {
+    "reessayer": "Retry",
+    "chargement": "Loading…"
+  },
+  "livre": {
+    "auteur": "Author",
+    "annee": "Year",
+    "editeur": "Publisher"
+  }
+}
