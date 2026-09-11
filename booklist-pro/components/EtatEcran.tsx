@@ -18,7 +18,7 @@ export function EtatEcran(props: Props) {
     case 'chargement':
       return (
         <View style={styles.centre}>
-          <ActivityIndicator size="large" color={theme.couleurs.primaire} />
+          <ActivityIndicator size="large" color={theme.couleurs.primaire} accessibilityRole="progressbar" accessibilityLabel="Chargement en cours" />
         </View>
       );
     case 'erreur':
