@@ -1,1 +1,16 @@
-{}
+{
+  "accueil": {
+    "titre": "Le fonds",
+    "vide": "Aucun ouvrage dans le fonds pour l'instant."
+  },
+  "commun": {
+    "reessayer": "Réessayer",
+    "chargement": "Chargement…"
+  },
+  "livre": {
+    "auteur": "Auteur",
+    "annee": "Année",
+    "editeur": "Éditeur"
+  }
+}
+
