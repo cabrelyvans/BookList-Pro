@@ -31,6 +31,23 @@ export const schemaPageLivres = z.object({
 
 export type PageLivres = z.infer<typeof schemaPageLivres>;
 
+const ANNEE_MIN = 1450;
+
+/** Champs qu'un libraire saisit réellement dans le formulaire d'ajout/édition. */
+export const schemaSaisieLivre = z.object({
+  titre: z.string().trim().min(1, 'Le titre est obligatoire').max(200, 'Titre trop long'),
+  auteur: z.string().trim().min(1, "L'auteur est obligatoire").max(200, 'Auteur trop long'),
+  editeur: z.string().trim().max(200, 'Éditeur trop long'),
+  annee: z
+    .number({ invalid_type_error: 'Année invalide' })
+    .int('Année invalide')
+    .min(ANNEE_MIN, 'Année invalide')
+    .max(new Date().getFullYear() + 1, 'Année invalide'),
+  lu: z.boolean(),
+});
+
+export type SaisieLivre = z.infer<typeof schemaSaisieLivre>;
+
 /** Filtres et tri acceptés par GET /books — un seul endroit qui en connaît la forme. */
 export type FiltresLivres = {
   page?: number;

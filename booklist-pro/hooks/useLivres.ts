@@ -1,7 +1,6 @@
-import { useInfiniteQuery, useQuery, type QueryClient, type InfiniteData } from '@tanstack/react-query';
-import { listerLivres } from '@/services/api/livres';
-import { versFiltresApi, type CritereRecherche } from '@/domain/recherche';
-import type { FiltresLivres, Livre, PageLivres } from '@/domain/livre';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { listerLivres, obtenirLivre } from '@/services/api/livres';
+import type { FiltresLivres } from '@/domain/livre';
 
 /** Clé de cache structurée — voir ADR 001. */
 export const clesLivres = {
@@ -23,42 +22,38 @@ export function useLivres(filtres: FiltresLivres) {
   });
 }
 
-const TAILLE_PAGE = 20;
-
 /**
- * Défilement infini (Lot 2) : chaque page est demandée au serveur avec les
- * critères actifs (recherche/filtres/tri) — jamais de filtrage côté client.
- * `fetchNextPage` déclenche un chargement dont l'état (`isFetchingNextPage`)
- * est distinct du chargement initial (`isLoading`), comme l'exige le sujet.
+ * Fiche détail d'un livre. `id` optionnel pour les écrans qui servent aussi
+ * en mode création (ex: le formulaire réutilisé création/édition) : la
+ * requête reste simplement désactivée tant qu'il n'y a pas d'id.
  */
-export function useLivresInfini(criteres: CritereRecherche) {
-  return useInfiniteQuery({
-    queryKey: clesLivres.recherche(criteres),
-    initialPageParam: 1,
-    queryFn: async ({ pageParam, signal }) => {
-      const resultat = await listerLivres(versFiltresApi(criteres, pageParam, TAILLE_PAGE), signal);
+export function useLivre(id: string | undefined) {
+  return useQuery({
+    queryKey: clesLivres.detail(id ?? ''),
+    queryFn: async ({ signal }) => {
+      const resultat = await obtenirLivre(id as string, signal);
       if (!resultat.succes) throw resultat.erreur;
       return resultat.donnees;
     },
-    getNextPageParam: (dernierePage) => (dernierePage.page < dernierePage.totalPages ? dernierePage.page + 1 : undefined),
+    enabled: Boolean(id),
   });
 }
 
 /**
- * Utilitaire partagé : applique `transformer` à chaque item de chaque page
- * de chaque liste en cache (forme `InfiniteData<PageLivres>`). Centralise la
- * connaissance de cette forme — les mutations optimistes (favori, statut de
- * lecture, suppression) ne manipulent jamais directement `{ pages: [...] }`.
+ * Scroll infini : le backend pagine déjà (page/limit/totalPages dans
+ * schemaPageLivres) — ce hook accumule les pages successives au fur et à
+ * mesure que l'écran demande la suivante, sans rien changer côté API.
  */
-export function transformerListesEnCache(
-  queryClient: QueryClient,
-  transformer: (items: Livre[]) => Livre[],
-): [readonly unknown[], InfiniteData<PageLivres> | undefined][] {
-  const precedent = queryClient.getQueriesData<InfiniteData<PageLivres>>({ queryKey: clesLivres.tous });
-
-  queryClient.setQueriesData<InfiniteData<PageLivres> | undefined>({ queryKey: clesLivres.tous }, (donnees) =>
-    donnees ? { ...donnees, pages: donnees.pages.map((page) => ({ ...page, items: transformer(page.items) })) } : donnees,
-  );
-
-  return precedent;
+export function useLivresInfini(filtres: Omit<FiltresLivres, 'page'>) {
+  return useInfiniteQuery({
+    queryKey: clesLivres.liste(filtres),
+    queryFn: async ({ pageParam, signal }) => {
+      const resultat = await listerLivres({ ...filtres, page: pageParam }, signal);
+      if (!resultat.succes) throw resultat.erreur;
+      return resultat.donnees;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (dernierePage) =>
+      dernierePage.page < dernierePage.totalPages ? dernierePage.page + 1 : undefined,
+  });
 }

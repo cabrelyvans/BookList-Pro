@@ -1,58 +1,59 @@
+// Fiche détail d'un livre : notes, favori, étoiles, enrichissement OpenLibrary, couverture.
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import { obtenirLivre } from '@/services/api/livres';
-import { clesLivres } from '@/hooks/useLivres';
-import { useBasculerFavori, useBasculerLu } from '@/hooks/useFavoris';
-import { useSupprimerLivreDifféré } from '@/hooks/useModifierLivre';
-import { EtatEcran } from '@/components/EtatEcran';
-import { Couverture } from '@/components/Couverture';
-import { EtoilesNote } from '@/components/EtoilesNote';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+
+import { BoutonFavori } from '@/components/BoutonFavori';
 import { Confirmation } from '@/components/Confirmation';
-import { FormulaireLivre } from '@/features/books/FormulaireLivre';
-import { ListeNotes } from '@/features/notes/ListeNotes';
-import { FormulaireNote } from '@/features/notes/FormulaireNote';
-import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
+import { Couverture } from '@/components/Couverture';
+import { EtatEcran } from '@/components/EtatEcran';
+import { EtoilesNote } from '@/components/EtoilesNote';
+import { estErreurApplicative, messageUtilisateur, type ErreurApplicative } from '@/domain/erreurs';
+import type { Livre } from '@/domain/livre';
+import { useLivre } from '@/hooks/useLivres';
+import { useModifierLivrePartiel, useSupprimerLivreDifféré } from '@/hooks/useModifierLivre';
+import { useAjouterNote, useNotes, useSupprimerNote } from '@/hooks/useNotes';
 import { theme } from '@/theme';
+
+// Même garde-fou que app/livres/nouveau.tsx : router.back() lève une erreur
+// si l'écran a été ouvert sans historique de navigation (ex: lien direct).
+function retour() {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace('/');
+  }
+}
 
 export default function EcranFicheLivre() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [modeEdition, setModeEdition] = useState(false);
+  const requeteLivre = useLivre(id);
+  const modifier = useModifierLivrePartiel();
+  const { planifier } = useSupprimerLivreDifféré();
   const [confirmationVisible, setConfirmationVisible] = useState(false);
 
-  const requete = useQuery({
-    queryKey: clesLivres.detail(id),
-    queryFn: async ({ signal }) => {
-      const resultat = await obtenirLivre(id, signal);
-      if (!resultat.succes) throw resultat.erreur;
-      return resultat.donnees;
-    },
-  });
-
-  const basculerFavori = useBasculerFavori();
-  const basculerLu = useBasculerLu();
-  const { planifier } = useSupprimerLivreDifféré();
-
-  if (requete.isLoading) return <EtatEcran statut="chargement" />;
-
-  if (requete.isError) {
-    const erreur: ErreurApplicative = estErreurApplicative(requete.error) ? requete.error : { type: 'inconnue', message: 'Erreur inattendue.' };
-    return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requete.refetch()} />;
+  if (requeteLivre.isLoading) {
+    return <EtatEcran statut="chargement" />;
   }
 
-  const livre = requete.data;
-  if (!livre) return <EtatEcran statut="vide" message="Cet ouvrage n'existe plus." />;
-
-  if (modeEdition) {
-    return (
-      <FormulaireLivre
-        livreExistant={livre}
-        onReussite={() => setModeEdition(false)}
-        onAnnuler={() => setModeEdition(false)}
-      />
-    );
+  if (requeteLivre.isError || !requeteLivre.data) {
+    const erreur: ErreurApplicative = estErreurApplicative(requeteLivre.error)
+      ? requeteLivre.error
+      : { type: 'inconnue', message: 'Livre introuvable.' };
+    return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requeteLivre.refetch()} />;
   }
+
+  const livre = requeteLivre.data;
+
+  const basculer = (modifications: Partial<Pick<Livre, 'lu' | 'favori' | 'note'>>) => {
+    modifier.mutate({ id: livre.id, version: livre.version, modifications });
+  };
+
+  const supprimer = () => {
+    setConfirmationVisible(false);
+    planifier(livre);
+    retour();
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.conteneur}>
@@ -60,94 +61,175 @@ export default function EcranFicheLivre() {
         <Couverture couverture={livre.couverture} idLivre={livre.id} titre={livre.titre} largeur={96} />
         <View style={styles.infosEntete}>
           <Text style={styles.titre}>{livre.titre}</Text>
-          <Text style={styles.auteur}>{livre.auteur} · {livre.annee}</Text>
-          <Text style={styles.editeur}>{livre.editeur}</Text>
-          <EtoilesNote note={livre.note} />
-          <Pressable
-            onPress={() => basculerLu.mutate(livre)}
-            accessibilityRole="button"
-            accessibilityLabel={livre.lu ? 'Marquer comme non lu' : 'Marquer comme lu'}
-            accessibilityState={{ selected: livre.lu }}
-            style={[styles.badgeStatut, livre.lu && styles.badgeStatutActif]}
-          >
-            <Text style={[styles.libelleStatut, livre.lu && styles.libelleStatutActif]}>{livre.lu ? 'Lu' : 'Non lu'}</Text>
-          </Pressable>
+          <Text style={styles.auteur}>{livre.auteur}</Text>
+          <Text style={styles.meta}>
+            {livre.editeur ? `${livre.editeur} · ` : ''}
+            {livre.annee}
+          </Text>
         </View>
         <Pressable
-          onPress={() => basculerFavori.mutate(livre)}
+          onPress={() => router.push({ pathname: '/livres/nouveau', params: { id: livre.id } })}
+          style={styles.boutonModifier}
           accessibilityRole="button"
-          accessibilityLabel={livre.favori ? 'Retirer des coups de cœur' : 'Ajouter aux coups de cœur'}
-          accessibilityState={{ selected: livre.favori }}
-          style={styles.boutonFavori}
+          accessibilityLabel="Modifier ce livre"
           hitSlop={8}
         >
-          <Text style={styles.iconeFavori}>{livre.favori ? '♥' : '♡'}</Text>
+          <Text style={styles.libelleModifier}>Modifier</Text>
         </Pressable>
       </View>
 
-      <View style={styles.actions}>
-        <Pressable onPress={() => setModeEdition(true)} style={[styles.bouton, styles.boutonSecondaire]} accessibilityRole="button">
-          <Text style={styles.libelleSecondaire}>Modifier</Text>
-        </Pressable>
-        <Pressable onPress={() => setConfirmationVisible(true)} style={[styles.bouton, styles.boutonDanger]} accessibilityRole="button">
-          <Text style={styles.libelleDanger}>Supprimer</Text>
-        </Pressable>
+      <View style={styles.ligneActions}>
+        <BoutonFavori favori={livre.favori} onChange={(favori) => basculer({ favori })} desactive={modifier.isPending} />
+
+        <View style={styles.ligneLu}>
+          <Text style={styles.libelleLu}>Lu</Text>
+          <Switch value={livre.lu} onValueChange={(lu) => basculer({ lu })} disabled={modifier.isPending} />
+        </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.titreSection}>Notes de lecture</Text>
-        <FormulaireNote livreId={livre.id} />
-        <ListeNotes livreId={livre.id} />
+        <Text style={styles.titreSection}>Note</Text>
+        <EtoilesNote note={livre.note} onChange={(note) => basculer({ note })} desactive={modifier.isPending} />
       </View>
+
+      {modifier.isError ? <Text style={styles.erreur}>{messageUtilisateur(
+        estErreurApplicative(modifier.error) ? modifier.error : { type: 'inconnue', message: '' },
+      )}</Text> : null}
+
+      <SectionNotes livreId={livre.id} />
+
+      <Pressable
+        onPress={() => setConfirmationVisible(true)}
+        style={styles.boutonSupprimer}
+        accessibilityRole="button"
+        accessibilityLabel="Supprimer ce livre"
+      >
+        <Text style={styles.libelleSupprimer}>Supprimer ce livre</Text>
+      </Pressable>
 
       <Confirmation
         visible={confirmationVisible}
-        titre="Supprimer cet ouvrage ?"
-        message={`« ${livre.titre} » sera retiré du fonds. Vous aurez 5 secondes pour annuler.`}
+        titre="Supprimer ce livre ?"
+        message={`« ${livre.titre} » sera retiré du fonds. Vous pourrez annuler pendant quelques secondes.`}
         libelleConfirmer="Supprimer"
         libelleAnnuler="Annuler"
+        onConfirmer={supprimer}
         onAnnuler={() => setConfirmationVisible(false)}
-        onConfirmer={() => {
-          setConfirmationVisible(false);
-          planifier(livre);
-          router.back();
-          // Le bandeau "Annulé ?" avec le bouton d'annulation (appel à `annuler(livre.id)`)
-          // est prévu dans un prochain incrément — la suppression réelle est bien différée
-          // de 5 secondes dès maintenant, seule l'IHM de rattrapage manque encore.
-        }}
       />
     </ScrollView>
   );
 }
 
+function SectionNotes({ livreId }: { livreId: string }) {
+  const requeteNotes = useNotes(livreId);
+  const ajouter = useAjouterNote(livreId);
+  const supprimer = useSupprimerNote(livreId);
+  const [brouillon, setBrouillon] = useState('');
+
+  const envoyer = () => {
+    const contenu = brouillon.trim();
+    if (contenu.length === 0) return;
+    ajouter.mutate(contenu, { onSuccess: () => setBrouillon('') });
+  };
+
+  return (
+    <View style={styles.section}>
+      <Text style={styles.titreSection}>Notes de lecture</Text>
+
+      {requeteNotes.isLoading ? <ActivityIndicator color={theme.couleurs.primaire} /> : null}
+
+      {requeteNotes.data?.map((note) => (
+        <View key={note.id} style={styles.carteNote}>
+          <Text style={styles.contenuNote}>{note.contenu}</Text>
+          <Pressable
+            onPress={() => supprimer.mutate(note.id)}
+            accessibilityRole="button"
+            accessibilityLabel="Supprimer cette note"
+            hitSlop={8}
+          >
+            <Text style={styles.supprimerNote}>Supprimer</Text>
+          </Pressable>
+        </View>
+      ))}
+
+      {requeteNotes.data?.length === 0 ? <Text style={styles.videNotes}>Aucune note pour l&apos;instant.</Text> : null}
+
+      <View style={styles.ajoutNote}>
+        <TextInput
+          value={brouillon}
+          onChangeText={setBrouillon}
+          placeholder="Ajouter une note de lecture…"
+          placeholderTextColor={theme.couleurs.texteAttenue}
+          style={styles.saisieNote}
+          multiline
+          accessibilityLabel="Nouvelle note de lecture"
+        />
+        <Pressable
+          onPress={envoyer}
+          disabled={ajouter.isPending || brouillon.trim().length === 0}
+          style={[styles.boutonAjoutNote, (ajouter.isPending || brouillon.trim().length === 0) && styles.boutonDesactive]}
+          accessibilityRole="button"
+          accessibilityLabel="Ajouter la note"
+        >
+          {ajouter.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.libelleAjoutNote}>Ajouter</Text>}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  conteneur: { padding: theme.espacements.lg, gap: theme.espacements.lg },
+  conteneur: { padding: theme.espacements.lg, gap: theme.espacements.lg, backgroundColor: theme.couleurs.fond },
   entete: { flexDirection: 'row', gap: theme.espacements.md },
-  infosEntete: { flex: 1, gap: 4 },
+  infosEntete: { flex: 1, gap: 4, justifyContent: 'center' },
   titre: { fontSize: 20, fontWeight: '700', color: theme.couleurs.texte },
-  auteur: { color: theme.couleurs.texteAttenue },
-  editeur: { color: theme.couleurs.texteAttenue, fontSize: 13 },
-  boutonFavori: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  iconeFavori: { fontSize: 26, color: theme.couleurs.danger },
-  badgeStatut: {
-    alignSelf: 'flex-start',
-    minHeight: 32,
-    paddingHorizontal: theme.espacements.sm,
-    justifyContent: 'center',
-    borderRadius: theme.rayons.sm,
-    backgroundColor: theme.couleurs.fond,
+  auteur: { fontSize: 16, color: theme.couleurs.texte },
+  boutonModifier: { minHeight: 44, justifyContent: 'center', paddingHorizontal: theme.espacements.sm },
+  libelleModifier: { color: theme.couleurs.primaire, fontWeight: '600' },
+  meta: { color: theme.couleurs.texteAttenue },
+  ligneActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  ligneLu: { flexDirection: 'row', alignItems: 'center', gap: theme.espacements.sm },
+  libelleLu: { color: theme.couleurs.texte, fontWeight: '600' },
+  section: { gap: theme.espacements.sm },
+  titreSection: { fontSize: 15, fontWeight: '700', color: theme.couleurs.texte },
+  erreur: { color: theme.couleurs.danger },
+  carteNote: {
+    backgroundColor: theme.couleurs.surface,
+    borderRadius: theme.rayons.md,
     borderWidth: 1,
     borderColor: theme.couleurs.bordure,
+    padding: theme.espacements.md,
+    gap: theme.espacements.xs,
   },
-  badgeStatutActif: { backgroundColor: theme.couleurs.succes, borderColor: theme.couleurs.succes },
-  libelleStatut: { color: theme.couleurs.texteAttenue, fontWeight: '600', fontSize: 12 },
-  libelleStatutActif: { color: '#fff' },
-  actions: { flexDirection: 'row', gap: theme.espacements.md },
-  bouton: { flex: 1, paddingVertical: theme.espacements.sm, borderRadius: theme.rayons.md, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  boutonSecondaire: { backgroundColor: theme.couleurs.fond },
-  boutonDanger: { backgroundColor: theme.couleurs.danger },
-  libelleSecondaire: { color: theme.couleurs.texte, fontWeight: '600' },
-  libelleDanger: { color: '#fff', fontWeight: '600' },
-  section: { gap: theme.espacements.sm },
-  titreSection: { fontSize: 16, fontWeight: '700', color: theme.couleurs.texte },
+  contenuNote: { color: theme.couleurs.texte },
+  supprimerNote: { color: theme.couleurs.danger, fontWeight: '600', alignSelf: 'flex-end' },
+  videNotes: { color: theme.couleurs.texteAttenue },
+  ajoutNote: { gap: theme.espacements.sm },
+  saisieNote: {
+    borderWidth: 1,
+    borderColor: theme.couleurs.bordure,
+    borderRadius: theme.rayons.sm,
+    padding: theme.espacements.sm,
+    minHeight: 44,
+    color: theme.couleurs.texte,
+    backgroundColor: theme.couleurs.surface,
+  },
+  boutonAjoutNote: {
+    backgroundColor: theme.couleurs.primaire,
+    borderRadius: theme.rayons.md,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boutonDesactive: { opacity: 0.5 },
+  libelleAjoutNote: { color: '#fff', fontWeight: '600' },
+  boutonSupprimer: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.rayons.md,
+    borderWidth: 1,
+    borderColor: theme.couleurs.danger,
+  },
+  libelleSupprimer: { color: theme.couleurs.danger, fontWeight: '600' },
 });
