@@ -1,6 +1,6 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { creerLivre, modifierLivrePartiel, remplacerLivre, supprimerLivre } from '@/services/api/livres';
-import { clesLivres } from './useLivres';
+import { clesLivres, transformerListesEnCache } from './useLivres';
 import { useSuppressionEnAttente } from '@/features/books/suppressionEnAttente';
 import type { Livre, SaisieLivre } from '@/domain/livre';
 import type { ErreurApplicative } from '@/domain/erreurs';
@@ -75,6 +75,11 @@ export function useSupprimerLivreDifféré() {
   const queryClient = useQueryClient();
 
   const planifier = (livre: Livre): void => {
+    // Passe désormais par le même helper que useFavoris.ts (transformerListesEnCache,
+    // hooks/useLivres.ts) — centralise la même correction : uniquement les
+    // caches de liste (clé ['livres','liste',…]), jamais la fiche détail
+    // (['livres','detail',id]), un objet Livre simple sans champ `items` —
+    // la toucher ici faisait planter l'app.
     transformerListesEnCache(queryClient, (items) => items.filter((item) => item.id !== livre.id));
     useSuppressionEnAttente.getState().annoncer(livre);
 

@@ -27,9 +27,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let annule = false;
-    lireThemePersiste().then((valeur) => {
-      if (!annule && valeur) setPreference(valeur);
-    });
+    lireThemePersiste()
+      .then((valeur) => {
+        if (!annule && valeur) setPreference(valeur);
+      })
+      .catch(() => {
+        // Stockage indisponible/corrompu : on garde la préférence système
+        // déjà appliquée par défaut plutôt que de laisser une promesse
+        // rejetée non gérée faire planter le démarrage de l'app.
+      });
     return () => {
       annule = true;
     };
