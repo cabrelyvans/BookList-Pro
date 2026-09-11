@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme';
 import { messageUtilisateur, type ErreurApplicative } from '@/domain/erreurs';
 
 type Props =
@@ -14,11 +15,14 @@ type Props =
  * réécrire cette logique dans chaque écran.
  */
 export function EtatEcran(props: Props) {
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
+
   switch (props.statut) {
     case 'chargement':
       return (
         <View style={styles.centre}>
-          <ActivityIndicator size="large" color={theme.couleurs.primaire} accessibilityRole="progressbar" accessibilityLabel="Chargement en cours" />
+          <ActivityIndicator size="large" color={themeActif.couleurs.primaire} accessibilityRole="progressbar" accessibilityLabel="Chargement en cours" />
         </View>
       );
     case 'erreur':
@@ -46,23 +50,25 @@ export function EtatEcran(props: Props) {
   }
 }
 
-const styles = StyleSheet.create({
-  centre: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.espacements.lg,
-    gap: theme.espacements.md,
-  },
-  messageErreur: { color: theme.couleurs.danger, textAlign: 'center', fontSize: 16 },
-  messageVide: { color: theme.couleurs.texteAttenue, textAlign: 'center', fontSize: 16 },
-  bouton: {
-    backgroundColor: theme.couleurs.primaire,
-    paddingHorizontal: theme.espacements.lg,
-    paddingVertical: theme.espacements.sm,
-    borderRadius: theme.rayons.md,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  libelleBouton: { color: '#fff', fontWeight: '600' },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    centre: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: theme.espacements.lg,
+      gap: theme.espacements.md,
+    },
+    messageErreur: { color: theme.couleurs.danger, textAlign: 'center', fontSize: 16 },
+    messageVide: { color: theme.couleurs.texteAttenue, textAlign: 'center', fontSize: 16 },
+    bouton: {
+      backgroundColor: theme.couleurs.primaire,
+      paddingHorizontal: theme.espacements.lg,
+      paddingVertical: theme.espacements.sm,
+      borderRadius: theme.rayons.md,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    libelleBouton: { color: theme.couleurs.surAccent, fontWeight: '600' },
+  });
+}

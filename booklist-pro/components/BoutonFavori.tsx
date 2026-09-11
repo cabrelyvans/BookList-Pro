@@ -1,6 +1,6 @@
 // Icône cœur avec bascule — reçoit l'état et le gestionnaire en props, ne connaît pas l'API.
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
 
 type Props = {
   favori: boolean;
@@ -9,6 +9,7 @@ type Props = {
 };
 
 export function BoutonFavori({ favori, onChange, desactive }: Props) {
+  const { themeActif } = useTheme();
   return (
     <Pressable
       accessibilityRole="switch"
@@ -19,7 +20,7 @@ export function BoutonFavori({ favori, onChange, desactive }: Props) {
       style={({ pressed }) => [styles.bouton, pressed && { opacity: 0.6 }]}
       hitSlop={8}
     >
-      <Text style={[styles.icone, { color: favori ? theme.couleurs.danger : theme.couleurs.texteAttenue }]}>
+      <Text style={[styles.icone, { color: favori ? themeActif.couleurs.danger : themeActif.couleurs.texteAttenue }]}>
         {favori ? '♥' : '♡'}
       </Text>
     </Pressable>

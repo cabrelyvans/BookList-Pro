@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { STATUTS, type CritereRecherche, type StatutLecture } from '@/domain/recherche';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme';
 
 type Props = { criteres: CritereRecherche; onChange: (criteres: CritereRecherche) => void };
 
@@ -8,6 +9,8 @@ const LIBELLES_STATUT: Record<StatutLecture, string> = { tous: 'Tous', lu: 'Lus'
 
 /** Barre de recherche + filtres (Lot 2) — traduit l'intention du libraire en CritereRecherche. */
 export function FiltresLivres({ criteres, onChange }: Props) {
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   return (
     <View style={styles.conteneur}>
       <TextInput
@@ -48,28 +51,30 @@ export function FiltresLivres({ criteres, onChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  conteneur: { gap: theme.espacements.sm, paddingHorizontal: theme.espacements.md, paddingTop: theme.espacements.md },
-  recherche: {
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-    borderRadius: theme.rayons.md,
-    paddingHorizontal: theme.espacements.md,
-    minHeight: 44,
-    backgroundColor: theme.couleurs.surface,
-    color: theme.couleurs.texte,
-  },
-  ligneFiltres: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.espacements.sm },
-  puce: {
-    paddingHorizontal: theme.espacements.md,
-    minHeight: 44,
-    justifyContent: 'center',
-    borderRadius: theme.rayons.lg,
-    backgroundColor: theme.couleurs.surface,
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-  },
-  puceActive: { backgroundColor: theme.couleurs.primaire, borderColor: theme.couleurs.primaire },
-  libellePuce: { color: theme.couleurs.texte, fontWeight: '600' },
-  libellePuceActive: { color: '#fff' },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    conteneur: { gap: theme.espacements.sm, paddingHorizontal: theme.espacements.md, paddingTop: theme.espacements.md },
+    recherche: {
+      borderWidth: 1,
+      borderColor: theme.couleurs.bordure,
+      borderRadius: theme.rayons.md,
+      paddingHorizontal: theme.espacements.md,
+      minHeight: 44,
+      backgroundColor: theme.couleurs.surface,
+      color: theme.couleurs.texte,
+    },
+    ligneFiltres: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.espacements.sm },
+    puce: {
+      paddingHorizontal: theme.espacements.md,
+      minHeight: 44,
+      justifyContent: 'center',
+      borderRadius: theme.rayons.lg,
+      backgroundColor: theme.couleurs.surface,
+      borderWidth: 1,
+      borderColor: theme.couleurs.bordure,
+    },
+    puceActive: { backgroundColor: theme.couleurs.primaire, borderColor: theme.couleurs.primaire },
+    libellePuce: { color: theme.couleurs.texte, fontWeight: '600' },
+    libellePuceActive: { color: theme.couleurs.surAccent },
+  });
+}

@@ -4,7 +4,8 @@ import { EtatEcran } from '@/components/EtatEcran';
 import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
 import { FormulaireLivre } from '@/features/books/FormulaireLivre';
 import { useLivre } from '@/hooks/useLivres';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme';
 
 // Si l'écran a été ouvert directement (rechargement de page sur le web,
 // lien partagé) il n'y a pas d'historique de navigation : router.back()
@@ -23,6 +24,8 @@ function retour() {
  * existant) ; absent → création. Évite de dupliquer FormulaireLivre.
  */
 export default function EcranFormulaireLivre() {
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   const { id } = useLocalSearchParams<{ id?: string }>();
   const requeteLivre = useLivre(id);
 
@@ -48,7 +51,9 @@ export default function EcranFormulaireLivre() {
   );
 }
 
-const styles = StyleSheet.create({
-  conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
-  titre: { fontSize: 20, fontWeight: '700', color: theme.couleurs.texte, padding: theme.espacements.lg, paddingBottom: 0 },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
+    titre: { fontSize: 20, fontWeight: '700', color: theme.couleurs.texte, padding: theme.espacements.lg, paddingBottom: 0 },
+  });
+}

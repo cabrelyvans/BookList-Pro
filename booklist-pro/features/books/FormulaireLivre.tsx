@@ -4,7 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { schemaSaisieLivre, type Livre, type SaisieLivre } from '@/domain/livre';
 import { useCreerLivre, useMettreAJourLivre, estErreur422 } from '@/hooks/useModifierLivre';
-import { theme } from '@/theme';
+import { useTheme } from '@/hooks/useTheme';
+import type { Theme } from '@/theme';
 
 type Props = {
   /** Absent = création. Présent = édition de ce livre précis. */
@@ -21,6 +22,8 @@ const VALEURS_PAR_DEFAUT: SaisieLivre = { titre: '', auteur: '', editeur: '', an
  * vers le bon champ plutôt qu'affichées en bloc.
  */
 export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props) {
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   const creer = useCreerLivre();
   const mettreAJour = useMettreAJourLivre();
   const enCours = creer.isPending || mettreAJour.isPending;
@@ -132,14 +135,21 @@ export function FormulaireLivre({ livreExistant, onReussite, onAnnuler }: Props)
           <Text style={styles.libelleSecondaire}>Annuler</Text>
         </Pressable>
         <Pressable onPress={soumettre} disabled={enCours} style={[styles.bouton, styles.boutonPrimaire]} accessibilityRole="button">
-          {enCours ? <ActivityIndicator color="#fff" /> : <Text style={styles.libellePrimaire}>Enregistrer</Text>}
+          {enCours ? <ActivityIndicator color={themeActif.couleurs.surAccent} /> : <Text style={styles.libellePrimaire}>Enregistrer</Text>}
         </Pressable>
       </View>
     </View>
   );
 }
 
+// Sous-composant de présentation pure, propre à ce formulaire — son propre
+// useTheme() plutôt qu'un `styles` reçu en prop depuis FormulaireLivre :
+// StyleSheet.create ne peut pas être dynamique, donc chaque composant qui
+// a besoin du thème le relit lui-même (lecture de contexte, pas de calcul
+// coûteux).
 function Champ({ label, erreur, children }: { label: string; erreur?: string; children: React.ReactNode }) {
+  const { themeActif } = useTheme();
+  const styles = creerStyles(themeActif);
   return (
     <View style={styles.champ}>
       <Text style={styles.label}>{label}</Text>
@@ -149,27 +159,29 @@ function Champ({ label, erreur, children }: { label: string; erreur?: string; ch
   );
 }
 
-const styles = StyleSheet.create({
-  conteneur: { gap: theme.espacements.md, padding: theme.espacements.lg },
-  champ: { gap: theme.espacements.xs },
-  label: { fontWeight: '600', color: theme.couleurs.texte },
-  saisie: {
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-    borderRadius: theme.rayons.sm,
-    paddingHorizontal: theme.espacements.sm,
-    minHeight: 44,
-    color: theme.couleurs.texte,
-    backgroundColor: theme.couleurs.surface,
-  },
-  erreurChamp: { color: theme.couleurs.danger, fontSize: 13 },
-  erreurGlobale: { color: theme.couleurs.danger, textAlign: 'center' },
-  ligneInterrupteur: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
-  libelleInterrupteur: { color: theme.couleurs.texte, fontWeight: '600' },
-  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: theme.espacements.md, marginTop: theme.espacements.sm },
-  bouton: { paddingHorizontal: theme.espacements.lg, paddingVertical: theme.espacements.sm, borderRadius: theme.rayons.md, minHeight: 44, justifyContent: 'center', minWidth: 100, alignItems: 'center' },
-  boutonSecondaire: { backgroundColor: theme.couleurs.fond },
-  boutonPrimaire: { backgroundColor: theme.couleurs.primaire },
-  libelleSecondaire: { color: theme.couleurs.texte, fontWeight: '600' },
-  libellePrimaire: { color: '#fff', fontWeight: '600' },
-});
+function creerStyles(theme: Theme) {
+  return StyleSheet.create({
+    conteneur: { gap: theme.espacements.md, padding: theme.espacements.lg },
+    champ: { gap: theme.espacements.xs },
+    label: { fontWeight: '600', color: theme.couleurs.texte },
+    saisie: {
+      borderWidth: 1,
+      borderColor: theme.couleurs.bordure,
+      borderRadius: theme.rayons.sm,
+      paddingHorizontal: theme.espacements.sm,
+      minHeight: 44,
+      color: theme.couleurs.texte,
+      backgroundColor: theme.couleurs.surface,
+    },
+    erreurChamp: { color: theme.couleurs.danger, fontSize: 13 },
+    erreurGlobale: { color: theme.couleurs.danger, textAlign: 'center' },
+    ligneInterrupteur: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
+    libelleInterrupteur: { color: theme.couleurs.texte, fontWeight: '600' },
+    actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: theme.espacements.md, marginTop: theme.espacements.sm },
+    bouton: { paddingHorizontal: theme.espacements.lg, paddingVertical: theme.espacements.sm, borderRadius: theme.rayons.md, minHeight: 44, justifyContent: 'center', minWidth: 100, alignItems: 'center' },
+    boutonSecondaire: { backgroundColor: theme.couleurs.fond },
+    boutonPrimaire: { backgroundColor: theme.couleurs.primaire },
+    libelleSecondaire: { color: theme.couleurs.texte, fontWeight: '600' },
+    libellePrimaire: { color: theme.couleurs.surAccent, fontWeight: '600' },
+  });
+}
