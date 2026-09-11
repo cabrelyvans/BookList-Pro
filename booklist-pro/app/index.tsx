@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useLivresInfini } from '@/hooks/useLivres';
@@ -6,8 +7,7 @@ import { CarteLivre } from '@/components/CarteLivre';
 import { FiltresLivres } from '@/features/books/FiltresLivres';
 import { theme } from '@/theme';
 import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
-import { CRITERES_PAR_DEFAUT, type CritereRecherche } from '@/domain/recherche';
-import type { Livre } from '@/domain/livre';
+import { CRITERES_PAR_DEFAUT, criteresActifs, type CritereRecherche } from '@/domain/recherche';
 
 /**
  * Écran d'accueil : liste paginée du fonds, chargée par scroll infini.
@@ -15,7 +15,8 @@ import type { Livre } from '@/domain/livre';
  * par services/api/. C'est la règle vérifiée en revue de code.
  */
 export default function EcranAccueil() {
-  const requete = useLivresInfini({ limit: 20 });
+  const [criteres, setCriteres] = useState<CritereRecherche>(CRITERES_PAR_DEFAUT);
+  const requete = useLivresInfini(criteres);
 
   if (requete.isLoading) {
     return <EtatEcran statut="chargement" />;
@@ -35,7 +36,14 @@ export default function EcranAccueil() {
       <FiltresLivres criteres={criteres} onChange={setCriteres} />
 
       {livres.length === 0 ? (
-        <EtatEcran statut="vide" message="Aucun ouvrage ne correspond à ces critères." />
+        <EtatEcran
+          statut="vide"
+          message={
+            criteresActifs(criteres)
+              ? 'Aucun ouvrage ne correspond à ces critères.'
+              : 'Rien pour l’instant — ajoute ton premier ouvrage.'
+          }
+        />
       ) : (
         <FlatList
           data={livres}
@@ -52,25 +60,7 @@ export default function EcranAccueil() {
               <ActivityIndicator style={styles.chargementSuite} color={theme.couleurs.primaire} />
             ) : null
           }
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => router.push(`/livres/${item.id}`)}
-              style={({ pressed }) => [styles.carte, pressed && styles.cartePressee]}
-              accessibilityRole="button"
-              accessibilityLabel={`Ouvrir la fiche de ${item.titre}`}
-            >
-              <Couverture couverture={item.couverture} idLivre={item.id} titre={item.titre} largeur={48} />
-              <View style={styles.infos}>
-                <Text style={styles.titre} numberOfLines={1}>
-                  {item.titre}
-                </Text>
-                <Text style={styles.auteur}>
-                  {item.auteur} · {item.annee}
-                </Text>
-              </View>
-              {item.favori ? <Text style={styles.iconeFavori}>♥</Text> : null}
-            </Pressable>
-          )}
+          renderItem={({ item }) => <CarteLivre livre={item} onPress={(id) => router.push(`/livres/${id}`)} />}
         />
       )}
 
@@ -90,22 +80,6 @@ const styles = StyleSheet.create({
   conteneur: { flex: 1, backgroundColor: theme.couleurs.fond },
   liste: { padding: theme.espacements.md, gap: theme.espacements.sm, paddingBottom: 88 },
   chargementSuite: { marginVertical: theme.espacements.md },
-  carte: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.espacements.md,
-    backgroundColor: theme.couleurs.surface,
-    padding: theme.espacements.md,
-    borderRadius: theme.rayons.md,
-    borderWidth: 1,
-    borderColor: theme.couleurs.bordure,
-    minHeight: 44,
-  },
-  cartePressee: { opacity: 0.7 },
-  infos: { flex: 1 },
-  titre: { fontSize: 16, fontWeight: '600', color: theme.couleurs.texte },
-  auteur: { color: theme.couleurs.texteAttenue, marginTop: 4 },
-  iconeFavori: { color: theme.couleurs.danger, fontSize: 18 },
   boutonAjout: {
     position: 'absolute',
     right: theme.espacements.lg,

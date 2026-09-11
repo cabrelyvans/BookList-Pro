@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery, type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import { listerLivres, obtenirLivre } from '@/services/api/livres';
 import type { FiltresLivres, Livre, PageLivres } from '@/domain/livre';
-import type { CritereRecherche } from '@/domain/recherche';
+import { versFiltresApi, type CritereRecherche } from '@/domain/recherche';
 
 /** Clé de cache structurée — voir ADR 001. */
 export const clesLivres = {
@@ -73,12 +73,22 @@ export function useLivre(id: string | undefined) {
  * Scroll infini : le backend pagine déjà (page/limit/totalPages dans
  * schemaPageLivres) — ce hook accumule les pages successives au fur et à
  * mesure que l'écran demande la suivante, sans rien changer côté API.
+ *
+ * Prend les critères UI (CritereRecherche — q/statut/favorisSeulement/tri/
+ * ordre) directement, pas déjà traduits en FiltresLivres : versFiltresApi
+ * (domain/recherche.ts) fait cette traduction ici, à chaque page demandée,
+ * un seul endroit qui connaît le mapping vers la forme attendue par
+ * GET /books (q/status/favori/sort/order). La clé de cache exclut `page`
+ * volontairement — toutes les pages d'une même recherche doivent partager
+ * une seule entrée de cache (empilées par pages[]), pas une par page.
  */
-export function useLivresInfini(filtres: Omit<FiltresLivres, 'page'>) {
+export function useLivresInfini(criteres: CritereRecherche) {
+  const { page: _page, ...filtresSansPage } = versFiltresApi(criteres, 1);
+
   return useInfiniteQuery({
-    queryKey: clesLivres.liste(filtres),
+    queryKey: clesLivres.liste(filtresSansPage),
     queryFn: async ({ pageParam, signal }) => {
-      const resultat = await listerLivres({ ...filtres, page: pageParam }, signal);
+      const resultat = await listerLivres(versFiltresApi(criteres, pageParam), signal);
       if (!resultat.succes) throw resultat.erreur;
       return resultat.donnees;
     },
