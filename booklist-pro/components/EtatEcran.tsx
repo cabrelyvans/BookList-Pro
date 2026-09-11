@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme';
 import { messageUtilisateur, type ErreurApplicative } from '@/domain/erreurs';
@@ -15,6 +16,7 @@ type Props =
  * réécrire cette logique dans chaque écran.
  */
 export function EtatEcran(props: Props) {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
 
@@ -22,7 +24,7 @@ export function EtatEcran(props: Props) {
     case 'chargement':
       return (
         <View style={styles.centre}>
-          <ActivityIndicator size="large" color={themeActif.couleurs.primaire} accessibilityRole="progressbar" accessibilityLabel="Chargement en cours" />
+          <ActivityIndicator size="large" color={themeActif.couleurs.primaire} accessibilityRole="progressbar" accessibilityLabel={t('commun.chargementAccessible')} />
         </View>
       );
     case 'erreur':
@@ -33,9 +35,9 @@ export function EtatEcran(props: Props) {
             onPress={props.onReessayer}
             style={styles.bouton}
             accessibilityRole="button"
-            accessibilityLabel="Réessayer"
+            accessibilityLabel={t('commun.reessayer')}
           >
-            <Text style={styles.libelleBouton}>Réessayer</Text>
+            <Text style={styles.libelleBouton}>{t('commun.reessayer')}</Text>
           </Pressable>
         </View>
       );

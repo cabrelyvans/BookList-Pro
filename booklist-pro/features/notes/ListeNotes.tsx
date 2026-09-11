@@ -1,10 +1,12 @@
 // Affichage horodaté des notes de lecture d'un livre.
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNotes, useSupprimerNote } from '@/hooks/useNotes';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme';
 
 export function ListeNotes({ livreId }: { livreId: string }) {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
   const requeteNotes = useNotes(livreId);
@@ -20,15 +22,15 @@ export function ListeNotes({ livreId }: { livreId: string }) {
           <Pressable
             onPress={() => supprimer.mutate(note.id)}
             accessibilityRole="button"
-            accessibilityLabel="Supprimer cette note"
+            accessibilityLabel={t('notes.supprimerAccessible')}
             hitSlop={8}
           >
-            <Text style={styles.supprimerNote}>Supprimer</Text>
+            <Text style={styles.supprimerNote}>{t('notes.supprimer')}</Text>
           </Pressable>
         </View>
       ))}
 
-      {requeteNotes.data?.length === 0 ? <Text style={styles.videNotes}>Aucune note pour l&apos;instant.</Text> : null}
+      {requeteNotes.data?.length === 0 ? <Text style={styles.videNotes}>{t('notes.vide')}</Text> : null}
     </>
   );
 }

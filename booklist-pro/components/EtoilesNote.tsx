@@ -1,5 +1,6 @@
 // Interaction par étoiles (note de 0 à 5) — composant pur.
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme';
 
@@ -17,6 +18,7 @@ type Props = {
 const VALEURS = [1, 2, 3, 4, 5] as const;
 
 export function EtoilesNote({ note, onChange, desactive }: Props) {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
 
@@ -37,7 +39,7 @@ export function EtoilesNote({ note, onChange, desactive }: Props) {
           <Pressable
             key={valeur}
             accessibilityRole="radio"
-            accessibilityLabel={`${valeur} étoile${valeur > 1 ? 's' : ''}`}
+            accessibilityLabel={t('etoiles.label', { count: valeur })}
             accessibilityState={{ checked: plein, disabled: desactive === true }}
             disabled={desactive}
             onPress={() => onChange(valeur)}

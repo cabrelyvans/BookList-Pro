@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { BoutonFavori } from '@/components/BoutonFavori';
 import { Confirmation } from '@/components/Confirmation';
@@ -28,6 +29,7 @@ function retour() {
 }
 
 export default function EcranFicheLivre() {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +45,7 @@ export default function EcranFicheLivre() {
   if (requeteLivre.isError || !requeteLivre.data) {
     const erreur: ErreurApplicative = estErreurApplicative(requeteLivre.error)
       ? requeteLivre.error
-      : { type: 'inconnue', message: 'Livre introuvable.' };
+      : { type: 'inconnue', message: t('fiche.introuvable') };
     return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requeteLivre.refetch()} />;
   }
 
@@ -75,10 +77,10 @@ export default function EcranFicheLivre() {
           onPress={() => router.push({ pathname: '/livres/nouveau', params: { id: livre.id } })}
           style={styles.boutonModifier}
           accessibilityRole="button"
-          accessibilityLabel="Modifier ce livre"
+          accessibilityLabel={t('fiche.modifierAccessible')}
           hitSlop={8}
         >
-          <Text style={styles.libelleModifier}>Modifier</Text>
+          <Text style={styles.libelleModifier}>{t('fiche.modifier')}</Text>
         </Pressable>
       </View>
 
@@ -86,13 +88,13 @@ export default function EcranFicheLivre() {
         <BoutonFavori favori={livre.favori} onChange={(favori) => basculer({ favori })} desactive={modifier.isPending} />
 
         <View style={styles.ligneLu}>
-          <Text style={styles.libelleLu}>Lu</Text>
+          <Text style={styles.libelleLu}>{t('fiche.lu')}</Text>
           <Switch value={livre.lu} onValueChange={(lu) => basculer({ lu })} disabled={modifier.isPending} />
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.titreSection}>Note</Text>
+        <Text style={styles.titreSection}>{t('fiche.note')}</Text>
         <EtoilesNote note={livre.note} onChange={(note) => basculer({ note })} desactive={modifier.isPending} />
       </View>
 
@@ -101,7 +103,7 @@ export default function EcranFicheLivre() {
       )}</Text> : null}
 
       <View style={styles.section}>
-        <Text style={styles.titreSection}>Notes de lecture</Text>
+        <Text style={styles.titreSection}>{t('fiche.notesLecture')}</Text>
         <ListeNotes livreId={livre.id} />
         <FormulaireNote livreId={livre.id} />
       </View>
@@ -110,17 +112,17 @@ export default function EcranFicheLivre() {
         onPress={() => setConfirmationVisible(true)}
         style={styles.boutonSupprimer}
         accessibilityRole="button"
-        accessibilityLabel="Supprimer ce livre"
+        accessibilityLabel={t('fiche.supprimer')}
       >
-        <Text style={styles.libelleSupprimer}>Supprimer ce livre</Text>
+        <Text style={styles.libelleSupprimer}>{t('fiche.supprimer')}</Text>
       </Pressable>
 
       <Confirmation
         visible={confirmationVisible}
-        titre="Supprimer ce livre ?"
-        message={`« ${livre.titre} » sera retiré du fonds. Vous pourrez annuler pendant quelques secondes.`}
-        libelleConfirmer="Supprimer"
-        libelleAnnuler="Annuler"
+        titre={t('confirmationSuppression.titre')}
+        message={t('confirmationSuppression.message', { titre: livre.titre })}
+        libelleConfirmer={t('confirmationSuppression.confirmer')}
+        libelleAnnuler={t('confirmationSuppression.annuler')}
         onConfirmer={supprimer}
         onAnnuler={() => setConfirmationVisible(false)}
       />

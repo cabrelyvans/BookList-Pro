@@ -1,14 +1,16 @@
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { STATUTS, type CritereRecherche, type StatutLecture } from '@/domain/recherche';
 import { useTheme } from '@/hooks/useTheme';
 import type { Theme } from '@/theme';
 
 type Props = { criteres: CritereRecherche; onChange: (criteres: CritereRecherche) => void };
 
-const LIBELLES_STATUT: Record<StatutLecture, string> = { tous: 'Tous', lu: 'Lus', nonlu: 'Non lus' };
+const CLES_STATUT: Record<StatutLecture, string> = { tous: 'filtres.statutTous', lu: 'filtres.statutLus', nonlu: 'filtres.statutNonLus' };
 
 /** Barre de recherche + filtres (Lot 2) — traduit l'intention du libraire en CritereRecherche. */
 export function FiltresLivres({ criteres, onChange }: Props) {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
   return (
@@ -16,14 +18,15 @@ export function FiltresLivres({ criteres, onChange }: Props) {
       <TextInput
         value={criteres.q}
         onChangeText={(q) => onChange({ ...criteres, q })}
-        placeholder="Rechercher un titre ou un auteur…"
+        placeholder={t('filtres.rechercherPlaceholder')}
         style={styles.recherche}
-        accessibilityLabel="Rechercher un titre ou un auteur"
+        accessibilityLabel={t('filtres.rechercherPlaceholder')}
         returnKeyType="search"
       />
       <View style={styles.ligneFiltres}>
         {STATUTS.map((statut) => {
           const actif = criteres.statut === statut;
+          const libelle = t(CLES_STATUT[statut]);
           return (
             <Pressable
               key={statut}
@@ -31,9 +34,9 @@ export function FiltresLivres({ criteres, onChange }: Props) {
               style={[styles.puce, actif && styles.puceActive]}
               accessibilityRole="button"
               accessibilityState={{ selected: actif }}
-              accessibilityLabel={`Filtrer : ${LIBELLES_STATUT[statut]}`}
+              accessibilityLabel={libelle}
             >
-              <Text style={[styles.libellePuce, actif && styles.libellePuceActive]}>{LIBELLES_STATUT[statut]}</Text>
+              <Text style={[styles.libellePuce, actif && styles.libellePuceActive]}>{libelle}</Text>
             </Pressable>
           );
         })}
@@ -42,9 +45,9 @@ export function FiltresLivres({ criteres, onChange }: Props) {
           style={[styles.puce, criteres.favorisSeulement && styles.puceActive]}
           accessibilityRole="button"
           accessibilityState={{ selected: criteres.favorisSeulement }}
-          accessibilityLabel="Filtrer : coups de cœur uniquement"
+          accessibilityLabel={t('filtres.favorisAccessible')}
         >
-          <Text style={[styles.libellePuce, criteres.favorisSeulement && styles.libellePuceActive]}>♥ Favoris</Text>
+          <Text style={[styles.libellePuce, criteres.favorisSeulement && styles.libellePuceActive]}>{t('filtres.favoris')}</Text>
         </Pressable>
       </View>
     </View>

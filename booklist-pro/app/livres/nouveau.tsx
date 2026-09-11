@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { EtatEcran } from '@/components/EtatEcran';
 import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
 import { FormulaireLivre } from '@/features/books/FormulaireLivre';
@@ -24,6 +25,7 @@ function retour() {
  * existant) ; absent → création. Évite de dupliquer FormulaireLivre.
  */
 export default function EcranFormulaireLivre() {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -36,7 +38,7 @@ export default function EcranFormulaireLivre() {
     if (requeteLivre.isError || !requeteLivre.data) {
       const erreur: ErreurApplicative = estErreurApplicative(requeteLivre.error)
         ? requeteLivre.error
-        : { type: 'inconnue', message: 'Livre introuvable.' };
+        : { type: 'inconnue', message: t('fiche.introuvable') };
       return <EtatEcran statut="erreur" erreur={erreur} onReessayer={() => requeteLivre.refetch()} />;
     }
   }
@@ -45,7 +47,7 @@ export default function EcranFormulaireLivre() {
 
   return (
     <View style={styles.conteneur}>
-      <Text style={styles.titre}>{livreExistant ? 'Modifier l’ouvrage' : 'Ajouter un ouvrage'}</Text>
+      <Text style={styles.titre}>{t(livreExistant ? 'formulaire.titreModification' : 'formulaire.titreAjout')}</Text>
       <FormulaireLivre livreExistant={livreExistant} onReussite={retour} onAnnuler={retour} />
     </View>
   );

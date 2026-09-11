@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSuppressionEnAttente } from '@/features/books/suppressionEnAttente';
 import { useSupprimerLivreDifféré, DELAI_ANNULATION_MS } from '@/hooks/useModifierLivre';
 import { useTheme } from '@/hooks/useTheme';
@@ -12,6 +13,7 @@ import type { Theme } from '@/theme';
  * réelle (5s) — les deux minuteurs démarrent au même instant.
  */
 export function BandeauAnnulation() {
+  const { t } = useTranslation();
   const { themeActif } = useTheme();
   const styles = creerStyles(themeActif);
   const livre = useSuppressionEnAttente((etat) => etat.livre);
@@ -29,7 +31,7 @@ export function BandeauAnnulation() {
   return (
     <View style={styles.bandeau} accessibilityRole="alert">
       <Text style={styles.texte} numberOfLines={1}>
-        « {livre.titre} » supprimé
+        {t('bandeauAnnulation.message', { titre: livre.titre })}
       </Text>
       <Pressable
         onPress={() => {
@@ -37,11 +39,11 @@ export function BandeauAnnulation() {
           effacer();
         }}
         accessibilityRole="button"
-        accessibilityLabel="Annuler la suppression"
+        accessibilityLabel={t('bandeauAnnulation.annulerAccessible')}
         style={styles.bouton}
         hitSlop={8}
       >
-        <Text style={styles.libelleBouton}>Annuler</Text>
+        <Text style={styles.libelleBouton}>{t('bandeauAnnulation.annuler')}</Text>
       </Pressable>
     </View>
   );

@@ -1,16 +1,78 @@
 {
   "accueil": {
     "titre": "Le fonds",
-    "vide": "Aucun ouvrage dans le fonds pour l'instant."
+    "vide": "Aucun ouvrage dans le fonds pour l'instant.",
+    "videFiltre": "Aucun ouvrage ne correspond à ces critères.",
+    "ajouter": "Ajouter un ouvrage"
   },
   "commun": {
     "reessayer": "Réessayer",
-    "chargement": "Chargement…"
+    "chargement": "Chargement…",
+    "chargementAccessible": "Chargement en cours"
   },
   "livre": {
+    "titre": "Titre",
     "auteur": "Auteur",
     "annee": "Année",
     "editeur": "Éditeur"
+  },
+  "fiche": {
+    "modifier": "Modifier",
+    "modifierAccessible": "Modifier ce livre",
+    "lu": "Lu",
+    "note": "Note",
+    "notesLecture": "Notes de lecture",
+    "supprimer": "Supprimer ce livre",
+    "introuvable": "Livre introuvable."
+  },
+  "confirmationSuppression": {
+    "titre": "Supprimer ce livre ?",
+    "message": "« {{titre}} » sera retiré du fonds. Vous pourrez annuler pendant quelques secondes.",
+    "confirmer": "Supprimer",
+    "annuler": "Annuler"
+  },
+  "formulaire": {
+    "titreAjout": "Ajouter un ouvrage",
+    "titreModification": "Modifier l'ouvrage",
+    "dejaLu": "Déjà lu par l'équipe",
+    "annuler": "Annuler",
+    "enregistrer": "Enregistrer"
+  },
+  "filtres": {
+    "rechercherPlaceholder": "Rechercher un titre ou un auteur…",
+    "statutTous": "Tous",
+    "statutLus": "Lus",
+    "statutNonLus": "Non lus",
+    "favoris": "♥ Favoris",
+    "favorisAccessible": "Filtrer : coups de cœur uniquement"
+  },
+  "notes": {
+    "placeholder": "Ajouter une note de lecture…",
+    "ajouter": "Ajouter",
+    "ajouterAccessible": "Ajouter la note",
+    "supprimer": "Supprimer",
+    "supprimerAccessible": "Supprimer cette note",
+    "vide": "Aucune note pour l'instant."
+  },
+  "favori": {
+    "ajouter": "Ajouter aux favoris",
+    "retirer": "Retirer des favoris"
+  },
+  "etoiles": {
+    "label_one": "{{count}} étoile",
+    "label_other": "{{count}} étoiles"
+  },
+  "theme": {
+    "versClair": "Passer au thème clair",
+    "versSombre": "Passer au thème sombre"
+  },
+  "langue": {
+    "versAnglais": "Switch to English",
+    "versFrancais": "Passer en français"
+  },
+  "bandeauAnnulation": {
+    "message": "« {{titre}} » supprimé",
+    "annuler": "Annuler",
+    "annulerAccessible": "Annuler la suppression"
   }
 }
-
