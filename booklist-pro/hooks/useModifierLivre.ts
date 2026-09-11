@@ -1,6 +1,7 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { creerLivre, remplacerLivre, supprimerLivre } from '@/services/api/livres';
 import { clesLivres } from './useLivres';
+import { useSuppressionEnAttente } from '@/features/books/suppressionEnAttente';
 import type { Livre, SaisieLivre } from '@/domain/livre';
 import type { ErreurApplicative } from '@/domain/erreurs';
 
@@ -34,7 +35,7 @@ export function useMettreAJourLivre() {
   });
 }
 
-const DELAI_ANNULATION_MS = 5000;
+export const DELAI_ANNULATION_MS = 5000;
 const minuteursEnAttente = new Map<string, ReturnType<typeof setTimeout>>();
 
 /**
@@ -52,6 +53,7 @@ export function useSupprimerLivreDifféré() {
       { queryKey: clesLivres.tous },
       (page) => (page ? { ...page, items: page.items.filter((item) => item.id !== livre.id) } : page),
     );
+    useSuppressionEnAttente.getState().annoncer(livre);
 
     const minuteur = setTimeout(() => {
       minuteursEnAttente.delete(livre.id);
@@ -72,6 +74,7 @@ export function useSupprimerLivreDifféré() {
       clearTimeout(minuteur);
       minuteursEnAttente.delete(livreId);
     }
+    useSuppressionEnAttente.getState().effacer();
     // Le livre n'a jamais été supprimé côté serveur : un simple refetch le refait apparaître.
     void queryClient.invalidateQueries({ queryKey: clesLivres.tous });
   };
