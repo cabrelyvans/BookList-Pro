@@ -2,9 +2,11 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { router } from 'expo-router';
 import { useLivresInfini } from '@/hooks/useLivres';
 import { EtatEcran } from '@/components/EtatEcran';
-import { Couverture } from '@/components/Couverture';
+import { CarteLivre } from '@/components/CarteLivre';
+import { FiltresLivres } from '@/features/books/FiltresLivres';
 import { theme } from '@/theme';
 import { estErreurApplicative, type ErreurApplicative } from '@/domain/erreurs';
+import { CRITERES_PAR_DEFAUT, type CritereRecherche } from '@/domain/recherche';
 import type { Livre } from '@/domain/livre';
 
 /**
@@ -30,12 +32,14 @@ export default function EcranAccueil() {
 
   return (
     <View style={styles.conteneur}>
+      <FiltresLivres criteres={criteres} onChange={setCriteres} />
+
       {livres.length === 0 ? (
-        <EtatEcran statut="vide" message="Aucun ouvrage dans le fonds pour l'instant." />
+        <EtatEcran statut="vide" message="Aucun ouvrage ne correspond à ces critères." />
       ) : (
         <FlatList
           data={livres}
-          keyExtractor={(item: Livre) => item.id}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.liste}
           onEndReached={() => {
             if (requete.hasNextPage && !requete.isFetchingNextPage) {

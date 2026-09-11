@@ -2,13 +2,15 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { listerLivres, obtenirLivre } from '@/services/api/livres';
 import type { FiltresLivres } from '@/domain/livre';
 
-/** Clé de cache structurée — chapitre §Lot 1 : clés de cache + invalidation après mutation. */
+/** Clé de cache structurée — voir ADR 001. */
 export const clesLivres = {
   tous: ['livres'] as const,
   liste: (filtres: FiltresLivres) => [...clesLivres.tous, 'liste', filtres] as const,
+  recherche: (criteres: CritereRecherche) => [...clesLivres.tous, 'recherche', criteres] as const,
   detail: (id: string) => [...clesLivres.tous, 'detail', id] as const,
 };
 
+/** Conservé pour un usage ponctuel (une seule page, sans défilement infini). */
 export function useLivres(filtres: FiltresLivres) {
   return useQuery({
     queryKey: clesLivres.liste(filtres),

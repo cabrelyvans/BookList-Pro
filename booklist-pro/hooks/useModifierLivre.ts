@@ -75,10 +75,7 @@ export function useSupprimerLivreDifféré() {
   const queryClient = useQueryClient();
 
   const planifier = (livre: Livre): void => {
-    queryClient.setQueriesData<{ items: Livre[]; total: number } | undefined>(
-      { queryKey: clesLivres.tous },
-      (page) => (page ? { ...page, items: page.items.filter((item) => item.id !== livre.id) } : page),
-    );
+    transformerListesEnCache(queryClient, (items) => items.filter((item) => item.id !== livre.id));
     useSuppressionEnAttente.getState().annoncer(livre);
 
     const minuteur = setTimeout(() => {

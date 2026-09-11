@@ -1,3 +1,5 @@
+import type { FiltresLivres } from './livre';
+
 /**
  * Vocabulaire de recherche côté serveur (Lot 2). Filtrer, trier et paginer
  * les 500 livres est le travail du serveur — ce module ne fait que décrire
@@ -25,19 +27,14 @@ export const CRITERES_PAR_DEFAUT: CritereRecherche = {
   ordre: 'asc',
 };
 
-/** Sérialise les critères en paramètres de requête pour GET /books. Fonction pure. */
-export function versParametresApi(criteres: CritereRecherche, page: number, limite = 20): Record<string, string> {
-  const parametres: Record<string, string> = {
-    page: String(page),
-    limit: String(limite),
-    sort: criteres.tri,
-    order: criteres.ordre,
-  };
+/** Traduit les critères UI vers la forme attendue par GET /books. Fonction pure. */
+export function versFiltresApi(criteres: CritereRecherche, page: number, limit = 20): FiltresLivres {
+  const filtres: FiltresLivres = { page, limit, sort: criteres.tri, order: criteres.ordre };
   const q = criteres.q.trim();
-  if (q.length > 0) parametres.q = q;
-  if (criteres.statut !== 'tous') parametres.status = criteres.statut;
-  if (criteres.favorisSeulement) parametres.favori = 'true';
-  return parametres;
+  if (q.length > 0) filtres.q = q;
+  if (criteres.statut !== 'tous') filtres.status = criteres.statut;
+  if (criteres.favorisSeulement) filtres.favori = true;
+  return filtres;
 }
 
 export function criteresActifs(criteres: CritereRecherche): boolean {
