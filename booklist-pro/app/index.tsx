@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,13 @@ export default function EcranAccueil() {
   const styles = creerStyles(themeActif);
   const [criteres, setCriteres] = useState<CritereRecherche>(CRITERES_PAR_DEFAUT);
   const requete = useLivresInfini(criteres);
+
+  // Référence stable : sans useCallback, renderItem recréait une nouvelle
+  // fonction à chaque rendu de l'écran (ex: frappe dans la recherche), ce
+  // qui invalidait le memo() de CarteLivre pour rien — la prop `onPress`
+  // seule suffisait à casser la comparaison superficielle de React.memo,
+  // même quand `livre` n'avait pas changé (voir docs/PERFORMANCE.md).
+  const ouvrirFiche = useCallback((id: string) => router.push(`/livres/${id}`), []);
 
   const versAnglais = i18n.language !== 'en';
 
@@ -95,7 +102,7 @@ export default function EcranAccueil() {
               <ActivityIndicator style={styles.chargementSuite} color={themeActif.couleurs.primaire} />
             ) : null
           }
-          renderItem={({ item }) => <CarteLivre livre={item} onPress={(id) => router.push(`/livres/${id}`)} />}
+          renderItem={({ item }) => <CarteLivre livre={item} onPress={ouvrirFiche} />}
         />
       )}
 
